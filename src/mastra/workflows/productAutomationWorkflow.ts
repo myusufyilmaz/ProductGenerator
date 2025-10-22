@@ -10,6 +10,7 @@ import { seoOptimizationTool } from "../tools/seoOptimizationTool";
 import { qualityValidationTool } from "../tools/qualityValidationTool";
 import { createShopifyProductTool } from "../tools/shopifyTool";
 import { loadShopifyConfigSync } from "../config/shopify-config";
+import { contentGeneratorAgent } from "../agents/contentGeneratorAgent";
 
 /**
  * Product Automation Workflow
@@ -176,7 +177,7 @@ const processProductStep = createStep({
       logger?.info('🔍 [Automation] Researching product trends');
       const researchResult = await researchProductTrendsTool.execute({
         context: {
-          primary_subjects: visionResult.properties.primary_subjects,
+          primary_subjects: visionResult.labels.slice(0, 5),
           product_type: inputData.folder_type === 'DTF' ? 'DTF Design' : 'POD Apparel',
           detected_text: visionResult.detected_text,
         },
@@ -188,8 +189,8 @@ const processProductStep = createStep({
       logger?.info('📂 [Automation] Matching to collection');
       const collectionMatch = await matchProductToCollectionTool.execute({
         context: {
-          visual_features: visionResult.labels,
-          detected_text: visionResult.detected_text.join(' '),
+          labels: visionResult.labels,
+          detected_text: visionResult.detected_text,
           folder_path: inputData.folder_path,
           product_type: inputData.folder_type === 'DTF' ? 'DTF Design' : 'POD Apparel',
         },
@@ -207,7 +208,7 @@ Visual Features: ${visionResult.labels.slice(0, 8).join(', ')}
 Colors: ${visionResult.dominant_colors.slice(0, 3).map(c => c.hex).join(', ')}
 Detected Text: ${visionResult.detected_text.slice(0, 3).join(' ')}
 Market Trends: ${researchResult.trends.slice(0, 2).join(', ')}
-Target Collection: ${collectionMatch.matched_collection.name}
+Target Collection: ${collectionMatch.collection_name}
 Product Type: ${inputData.folder_type === 'DTF' ? 'DTF Design (customizable print)' : 'POD Apparel (ready-to-wear)'}
 
 Write a 150-250 word description that stands out.`;
@@ -230,7 +231,7 @@ Write a 150-250 word description that stands out.`;
           product_title: inputData.folder_name,
           description: productDescription,
           visual_features: visionResult.labels.slice(0, 10),
-          theme: collectionMatch.matched_collection.name.split(/[–-]/)[0].trim(),
+          theme: collectionMatch.collection_name.split(/[–-]/)[0].trim(),
         },
         runtimeContext,
         mastra,
@@ -245,8 +246,8 @@ Write a 150-250 word description that stands out.`;
           title: inputData.folder_name,
           description: productDescription,
           meta_description: seoResult.meta_description,
-          tags: [...collectionMatch.matched_tags, ...seoResult.suggested_tags],
-          collection_match_confidence: collectionMatch.confidence_score,
+          tags: [...collectionMatch.tags_required, ...seoResult.suggested_tags],
+          collection_match_confidence: collectionMatch.confidence,
           has_images: true,
           variant_count: 3, // Default variants
           recent_descriptions: [], // TODO: Query from database
@@ -271,9 +272,9 @@ Write a 150-250 word description that stands out.`;
         // Log what would be published
         logger?.info('📦 [Automation] Product ready for publishing', {
           title: inputData.folder_name,
-          collection: collectionMatch.matched_collection.name,
+          collection: collectionMatch.collection_name,
           confidence: validation.overall_confidence,
-          tags_count: [...collectionMatch.matched_tags, ...seoResult.suggested_tags].length,
+          tags_count: [...collectionMatch.tags_required, ...seoResult.suggested_tags].length,
         });
         
         return {
