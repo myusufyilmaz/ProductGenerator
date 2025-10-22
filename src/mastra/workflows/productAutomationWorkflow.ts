@@ -458,23 +458,28 @@ const processAllFoldersStep = createStep({
           // Step 7: SEO optimization
           const seoResult = await seoOptimizationTool.execute({
             context: {
-              title: folder.folder_name,
+              product_title: folder.folder_name,
               description: contentResponse.description,
-              detected_objects: analysis.labels,
-              colors: colorStrings,
+              visual_features: analysis.labels,
+              theme: collectionMatch.collection_name,
+              target_audience: 'team parents, fans, enthusiasts',
             },
             runtimeContext,
             mastra,
           });
+          
+          // Ensure suggested_tags is an array (defensive handling)
+          const suggestedTags = Array.isArray(seoResult?.suggested_tags) ? seoResult.suggested_tags : [];
+          const allTags = [...collectionMatch.tags_required, ...suggestedTags];
           
           // Step 8: Quality validation
           const validation = await qualityValidationTool.execute({
             context: {
               title: folder.folder_name,
               description: contentResponse.description,
-              seo_meta_description: seoResult.meta_description,
-              suggested_tags: [...collectionMatch.tags_required, ...seoResult.suggested_tags],
-              collection_confidence: collectionMatch.confidence_score,
+              seo_meta_description: seoResult?.meta_description || contentResponse.description.substring(0, 160),
+              suggested_tags: allTags,
+              collection_confidence: collectionMatch.confidence,
             },
             runtimeContext,
             mastra,
@@ -487,11 +492,11 @@ const processAllFoldersStep = createStep({
                 title: folder.folder_name,
                 description: contentResponse.description,
                 images: images.images,
-                collection_id: collectionMatch.matched_collection_id,
-                tags: [...collectionMatch.tags_required, ...seoResult.suggested_tags],
-                seo_title: seoResult.seo_title,
-                seo_meta_description: seoResult.meta_description,
-                product_type: collectionMatch.matched_collection_name,
+                collection_id: collectionMatch.collection_id,
+                tags: allTags,
+                seo_title: seoResult?.seo_title || folder.folder_name,
+                seo_meta_description: seoResult?.meta_description || contentResponse.description.substring(0, 160),
+                product_type: collectionMatch.collection_name,
               },
               runtimeContext,
               mastra,
