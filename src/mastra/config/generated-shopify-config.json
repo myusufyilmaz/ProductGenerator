@@ -1,0 +1,839 @@
+{
+  "audience_tags": [
+    "audience:brother",
+    "audience:dad",
+    "audience:fans",
+    "audience:grandma",
+    "audience:mom",
+    "audience:sister",
+    "audience:team-fans",
+    "audience:team-parent",
+    "audience:team-parents"
+  ],
+  "collections": [
+    {
+      "boost_score": 1,
+      "id": "660565885222",
+      "keywords": [
+        "4th",
+        "july",
+        "dtf",
+        "designs",
+        "dtf-4th-of-july"
+      ],
+      "name": "4th of July  – DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660566016294",
+      "keywords": [
+        "4th",
+        "july",
+        "pod",
+        "apparel",
+        "pod-4th-of-july"
+      ],
+      "name": "4th of July - POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660562051366",
+      "keywords": [
+        "animals",
+        "dtf",
+        "designs",
+        "dtf-animals"
+      ],
+      "name": "Animals  – DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660562116902",
+      "keywords": [
+        "animals",
+        "pod",
+        "apparel",
+        "pod-animals"
+      ],
+      "name": "Animals  – POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660914962726",
+      "keywords": [
+        "anti",
+        "bullying",
+        "dtf",
+        "designs",
+        "pod-anti-bullying"
+      ],
+      "name": "Anti-Bullying  – DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660914864422",
+      "keywords": [
+        "anti",
+        "bullying",
+        "pod",
+        "apparel",
+        "dtf-anti-bullying"
+      ],
+      "name": "Anti-Bullying – POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660896645414",
+      "keywords": [
+        "autism",
+        "dtf",
+        "designs",
+        "dtf-autism"
+      ],
+      "name": "Autism  – DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660896743718",
+      "keywords": [
+        "autism",
+        "pod",
+        "apparel",
+        "pod-autism"
+      ],
+      "name": "Autism  – POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660938260774",
+      "keywords": [
+        "baby",
+        "bodysuits",
+        "pod",
+        "apparel",
+        "pod-baby-bodysuits"
+      ],
+      "name": "Baby Bodysuits s – POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660569817382",
+      "keywords": [
+        "baseball",
+        "dtf",
+        "designs",
+        "dtf-baseball"
+      ],
+      "name": "Baseball  – DTF Designs",
+      "tags_required": [
+        "channel:dtf",
+        "theme:baseball"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660569948454",
+      "keywords": [
+        "baseball",
+        "pod",
+        "apparel",
+        "pod-baseball"
+      ],
+      "name": "Baseball  – POD Apparel",
+      "tags_required": [
+        "channel:pod",
+        "theme:baseball"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660908048678",
+      "keywords": [
+        "basketball",
+        "dtf",
+        "designs",
+        "dtf-basketball"
+      ],
+      "name": "Basketball  - DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660908114214",
+      "keywords": [
+        "basketball",
+        "pod",
+        "apparel",
+        "pod-basketball"
+      ],
+      "name": "Basketball  - POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660920074534",
+      "keywords": [
+        "beach",
+        "dtf",
+        "designs",
+        "dtf-beach"
+      ],
+      "name": "Beach  - DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660920172838",
+      "keywords": [
+        "beach",
+        "pod",
+        "apparel",
+        "pod-beach"
+      ],
+      "name": "Beach  - POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660917518630",
+      "keywords": [
+        "bigfoot",
+        "dtf",
+        "designs",
+        "dtf-bigfoot"
+      ],
+      "name": "Bigfoot -  DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660917616934",
+      "keywords": [
+        "bigfoot",
+        "pod",
+        "apparel",
+        "pod-bigfoot"
+      ],
+      "name": "Bigfoot -  POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660920402214",
+      "keywords": [
+        "boating",
+        "dtf",
+        "designs",
+        "dtf-boating"
+      ],
+      "name": "Boating - DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660920467750",
+      "keywords": [
+        "boating",
+        "pod",
+        "apparel",
+        "pod-boating"
+      ],
+      "name": "Boating - POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660914340134",
+      "keywords": [
+        "breast",
+        "cancer",
+        "dtf",
+        "designs",
+        "dtf-breast-cancer"
+      ],
+      "name": "Breast Cancer  - DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660914438438",
+      "keywords": [
+        "breast",
+        "cancer",
+        "pod",
+        "apparel",
+        "pod-breast-cancer"
+      ],
+      "name": "Breast Cancer  - POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660919976230",
+      "keywords": [
+        "camping",
+        "dtf",
+        "designs",
+        "dtf-camping"
+      ],
+      "name": "Camping - DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660920041766",
+      "keywords": [
+        "camping",
+        "pod",
+        "apparel",
+        "pod-camping"
+      ],
+      "name": "Camping — POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660916175142",
+      "keywords": [
+        "cats",
+        "dtf",
+        "designs",
+        "dtf-cats"
+      ],
+      "name": "Cats - DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660916306214",
+      "keywords": [
+        "cats",
+        "pod",
+        "apparel",
+        "pod-cats"
+      ],
+      "name": "Cats - POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660561920294",
+      "keywords": [
+        "charities",
+        "dtf",
+        "designs",
+        "dtf-charities"
+      ],
+      "name": "Charities – DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660561953062",
+      "keywords": [
+        "charities",
+        "pod",
+        "apparel",
+        "pod-charities"
+      ],
+      "name": "Charities – POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660909556006",
+      "keywords": [
+        "cheerleading",
+        "dtf",
+        "designs",
+        "dtf-cheerleading"
+      ],
+      "name": "Cheerleading  – DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660909588774",
+      "keywords": [
+        "cheerleading",
+        "pod",
+        "apparel",
+        "pod-cheerleading"
+      ],
+      "name": "Cheerleading  – POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660920893734",
+      "keywords": [
+        "cruise",
+        "vacation",
+        "dtf",
+        "designs",
+        "dtf-cruise-vacation"
+      ],
+      "name": "Cruise Vacation – DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660920959270",
+      "keywords": [
+        "cruise",
+        "vacation",
+        "pod",
+        "apparel",
+        "pod-cruise-vacation"
+      ],
+      "name": "Cruise Vacation – POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660415250726",
+      "keywords": [
+        "custom",
+        "dtf",
+        "transfers",
+        "designs",
+        "dtf-custom"
+      ],
+      "name": "Custom DTF Transfers  – DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660915192102",
+      "keywords": [
+        "diabetes",
+        "pod",
+        "apparel",
+        "pod-diabetes"
+      ],
+      "name": "Diabetes  — POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660915028262",
+      "keywords": [
+        "diabetesdtf",
+        "designs",
+        "dtf-diabetes"
+      ],
+      "name": "DiabetesDTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660909293862",
+      "keywords": [
+        "disc",
+        "golf",
+        "dtf",
+        "designs",
+        "dtf-disc-golf"
+      ],
+      "name": "Disc Golf  – DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660909424934",
+      "keywords": [
+        "disc",
+        "golf",
+        "pod",
+        "apparel",
+        "pod-disc-golf"
+      ],
+      "name": "Disc Golf  – POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660916732198",
+      "keywords": [
+        "dogs",
+        "pod",
+        "apparel",
+        "pod-dogs"
+      ],
+      "name": "Dogs  - POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660916502822",
+      "keywords": [
+        "dogs",
+        "dtf",
+        "designs",
+        "dtf-dogs"
+      ],
+      "name": "Dogs  – DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660387070246",
+      "keywords": [
+        "dtf",
+        "designs"
+      ],
+      "name": "DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660916076838",
+      "keywords": [
+        "emt",
+        "pod",
+        "apparel",
+        "pod-emt"
+      ],
+      "name": "EMT  - POD Apparel",
+      "tags_required": [
+        "channel:pod",
+        "theme:emt"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660916011302",
+      "keywords": [
+        "emt",
+        "dtf",
+        "designs",
+        "dtf-emt"
+      ],
+      "name": "EMT  – DTF Designs",
+      "tags_required": [
+        "channel:dtf",
+        "theme:emt"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660914569510",
+      "keywords": [
+        "environmental",
+        "pod",
+        "apparel",
+        "pod-environmental"
+      ],
+      "name": "Environmental  — POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660914471206",
+      "keywords": [
+        "environmental",
+        "dtf",
+        "designs",
+        "dtf-environmental"
+      ],
+      "name": "Environmental n – DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660917387558",
+      "keywords": [
+        "farm",
+        "animals",
+        "dtf",
+        "designs",
+        "dtf-farm-animals"
+      ],
+      "name": "Farm Animals - DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660917453094",
+      "keywords": [
+        "farm",
+        "animals",
+        "pod",
+        "apparel",
+        "pod-farm-animals"
+      ],
+      "name": "Farm Animals — POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660913389862",
+      "keywords": [
+        "father’s",
+        "day",
+        "dtf",
+        "designs",
+        "dtf-fathers-day"
+      ],
+      "name": "Father’s Day  — DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660913488166",
+      "keywords": [
+        "father’s",
+        "day",
+        "pod",
+        "apparel",
+        "pod-fathers-day"
+      ],
+      "name": "Father’s Day  — POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660915847462",
+      "keywords": [
+        "fire",
+        "department",
+        "dtf",
+        "designs",
+        "dtf-fire-department"
+      ],
+      "name": "Fire Department  - DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660915880230",
+      "keywords": [
+        "fire",
+        "department",
+        "pod",
+        "apparel",
+        "pod-fire-department"
+      ],
+      "name": "Fire Department  — POD Apparel",
+      "tags_required": [
+        "channel:pod"
+      ]
+    },
+    {
+      "boost_score": 1,
+      "id": "660920500518",
+      "keywords": [
+        "fishing",
+        "dtf",
+        "designs",
+        "dtf-fishing"
+      ],
+      "name": "Fishing  — DTF Designs",
+      "tags_required": [
+        "channel:dtf"
+      ]
+    }
+  ],
+  "confidence_thresholds": {
+    "auto_publish": 75,
+    "quarantine": 60,
+    "reject": 60
+  },
+  "metafield_options": {
+    "care_instructions": [
+      "Wash inside out",
+      "Low heat tumble dry"
+    ],
+    "compatible_printer": [
+      "DTF-X",
+      "L1800",
+      "Universal"
+    ],
+    "paper_size": [
+      "8.5x11",
+      "11x17"
+    ]
+  },
+  "product_types": {
+    "DTF_DESIGN": {
+      "type_name": "DTF Design",
+      "variants": [
+        {
+          "inventory_quantity": 5000,
+          "price": 1.99,
+          "size": "Adult Left Chest  (4\")",
+          "sku_suffix": "LC04IN"
+        },
+        {
+          "inventory_quantity": 5000,
+          "price": 4.99,
+          "size": "Adult Full Front (11\")",
+          "sku_suffix": "FF11IN"
+        },
+        {
+          "inventory_quantity": 5000,
+          "price": 3.99,
+          "size": "Youth (9\")",
+          "sku_suffix": "Y09IN"
+        },
+        {
+          "inventory_quantity": 5000,
+          "price": 2.99,
+          "size": "Toddler (6\")",
+          "sku_suffix": "T06IN"
+        },
+        {
+          "inventory_quantity": 5000,
+          "price": 1.99,
+          "size": "Hat (3\")",
+          "sku_suffix": "H03IN"
+        }
+      ],
+      "vendor": "InkMerge"
+    }
+  },
+  "sales_channels": [
+    "Online Store",
+    "Google & YouTube",
+    "Inbox"
+  ],
+  "style_tags": [
+    "style:bold",
+    "style:bold-blocky",
+    "style:bold-scripted",
+    "style:bold-varsity",
+    "style:cartoon",
+    "style:chunky-lettering",
+    "style:chunky-retro",
+    "style:classic",
+    "style:colorful",
+    "style:crisp-outline",
+    "style:edgy",
+    "style:energetic",
+    "style:hand-lettered",
+    "style:handwritten-script",
+    "style:heartfelt",
+    "style:minimal",
+    "style:minimalist",
+    "style:pattern",
+    "style:playful",
+    "style:playful-block",
+    "style:playful-bold",
+    "style:playful-edge",
+    "style:retro",
+    "style:rustic-charm",
+    "style:script-block-mix",
+    "style:sporty",
+    "style:sporty-boldness",
+    "style:sporty-romantic",
+    "style:textured-vintage",
+    "style:varsity",
+    "style:whimsical-fun",
+    "style:whimsical-script"
+  ],
+  "theme_tags": [
+    "theme:4th-of-july",
+    "theme:animals",
+    "theme:baseball",
+    "theme:holiday",
+    "theme:patriotic",
+    "theme:sports"
+  ]
+}
