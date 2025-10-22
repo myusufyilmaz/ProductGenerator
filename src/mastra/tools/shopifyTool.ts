@@ -80,22 +80,20 @@ export const createShopifyProductTool = createTool({
       const session = shopify.session.customAppSession(process.env.SHOPIFY_STORE_URL!);
       const client = new shopify.clients.Rest({ session });
       
-      // Step 1: Upload images to Shopify and get URLs
-      logger?.info('📸 [Shopify] Uploading images', { count: context.images.length });
+      // Step 1: Prepare images with base64 attachments
+      logger?.info('📸 [Shopify] Preparing images', { count: context.images.length });
       
-      const uploadedImageUrls: string[] = [];
+      const imageAttachments: any[] = [];
       
       for (const image of context.images) {
         try {
-          // Shopify expects images to be uploaded as attachments (base64) or URLs
-          // We'll use the Admin API's staged uploads for larger files
-          const imageBuffer = Buffer.from(image.content, 'base64');
-          
-          // For simplicity, we'll use direct base64 attachment
-          // In production, consider using staged uploads for files >10MB
-          uploadedImageUrls.push(`data:${image.mime_type};base64,${image.content}`);
-        } catch (uploadError) {
-          logger?.error('❌ [Shopify] Error preparing image', { error: uploadError, image_name: image.name });
+          // Shopify accepts base64 via the 'attachment' field
+          imageAttachments.push({
+            attachment: image.content,
+            filename: image.name,
+          });
+        } catch (error: any) {
+          logger?.error('❌ [Shopify] Error preparing image', { error: error.message, image_name: image.name });
         }
       }
       
@@ -112,10 +110,7 @@ export const createShopifyProductTool = createTool({
         metafields_global_title_tag: context.title,
         metafields_global_description_tag: context.meta_description,
         status: 'active',
-        images: uploadedImageUrls.map((src, index) => ({
-          src,
-          position: index + 1,
-        })),
+        images: imageAttachments,
         variants: context.variants.map(variant => ({
           title: variant.size,
           price: variant.price.toString(),

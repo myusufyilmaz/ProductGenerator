@@ -421,9 +421,9 @@ const processAllFoldersStep = createStep({
           // Step 4: Research trends
           const trends = await researchProductTrendsTool.execute({
             context: {
-              design_elements: analysis.labels,
-              colors: colorStrings,
-              detected_text: textString,
+              primary_subjects: analysis.labels,
+              product_type: folder.folder_type,
+              detected_text: analysis.detected_text,
             },
             runtimeContext,
             mastra,
@@ -442,14 +442,16 @@ const processAllFoldersStep = createStep({
           });
           
           // Step 6: Generate content
+          const trendsSummary = `${trends.context}. Keywords: ${trends.keywords.join(', ')}. Angles: ${trends.creative_angles.join('; ')}`;
+          
           const contentResponse = await generateProductDescriptionTool.execute({
             context: {
               sku: folder.folder_name,
-              collection: collectionMatch.matched_collection_name,
+              collection: collectionMatch.collection_name,
               design_elements: analysis.labels,
               colors: colorStrings,
               detected_text: textString,
-              trends: trends.trend_summary,
+              trends: trendsSummary,
             },
             runtimeContext,
             mastra,
@@ -472,14 +474,20 @@ const processAllFoldersStep = createStep({
           const suggestedTags = Array.isArray(seoResult?.suggested_tags) ? seoResult.suggested_tags : [];
           const allTags = [...collectionMatch.tags_required, ...suggestedTags];
           
+          // Defensive: ensure description exists
+          const description = contentResponse?.description || `${folder.folder_name} DTF Design`;
+          const metaDescription = seoResult?.meta_description || description.substring(0, 160);
+          
           // Step 8: Quality validation
           const validation = await qualityValidationTool.execute({
             context: {
               title: folder.folder_name,
-              description: contentResponse.description,
-              seo_meta_description: seoResult?.meta_description || contentResponse.description.substring(0, 160),
-              suggested_tags: allTags,
-              collection_confidence: collectionMatch.confidence,
+              description: description,
+              meta_description: metaDescription,
+              tags: allTags,
+              collection_match_confidence: collectionMatch.confidence,
+              has_images: images.images.length > 0,
+              variant_count: 0, // Will be set during Shopify product creation
             },
             runtimeContext,
             mastra,
@@ -487,16 +495,25 @@ const processAllFoldersStep = createStep({
           
           // Step 9: Publish if quality is high enough
           if (validation.overall_confidence >= 75) {
+            const urlHandle = folder.folder_name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            
             await createShopifyProductTool.execute({
               context: {
-                title: folder.folder_name,
-                description: contentResponse.description,
+                title: seoResult?.seo_title || folder.folder_name,
+                description: description,
+                meta_description: metaDescription,
+                url_handle: urlHandle,
+                product_type: collectionMatch.collection_name,
+                vendor: 'InkMerge',
+                tags: allTags,
+                variants: [{
+                  sku: folder.folder_name,
+                  size: 'One Size',
+                  price: 24.99,
+                  inventory_quantity: 999,
+                }],
                 images: images.images,
                 collection_id: collectionMatch.collection_id,
-                tags: allTags,
-                seo_title: seoResult?.seo_title || folder.folder_name,
-                seo_meta_description: seoResult?.meta_description || contentResponse.description.substring(0, 160),
-                product_type: collectionMatch.collection_name,
               },
               runtimeContext,
               mastra,
