@@ -74,8 +74,11 @@ export function loadShopifyConfigSync(): ShopifyConfig {
         type_name: "DTF Design",
         vendor: "InkMerge",
         variants: [
-          { size: "Adult Left Chest (4\")", sku_suffix: "ALC", price: 5.00 },
-          { size: "Youth Left Chest (3\")", sku_suffix: "YLC", price: 4.50 },
+          { size: "Adult Left Chest  (4\")", sku_suffix: "LC04IN", price: 1.99 },
+          { size: "Adult Full Front (11\")", sku_suffix: "FF11IN", price: 4.99 },
+          { size: "Youth (9\")", sku_suffix: "Y09IN", price: 3.99 },
+          { size: "Toddler (6\")", sku_suffix: "T06IN", price: 2.99 },
+          { size: "Hat (3\")", sku_suffix: "H03IN", price: 1.99 },
         ],
       },
       "POD": {
