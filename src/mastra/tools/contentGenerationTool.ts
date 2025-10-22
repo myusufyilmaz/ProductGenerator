@@ -35,33 +35,27 @@ export const generateProductDescriptionTool = createTool({
     const logger = mastra?.getLogger();
     logger?.info('✍️ [ContentGen] Generating product description', { sku: context.sku });
     
-    const prompt = `You are an expert e-commerce copywriter specializing in DTF designs and print-on-demand apparel.
+    const prompt = `Write a simple product description like you're texting a friend about this DTF transfer design.
 
-Create a UNIQUE, CREATIVE product description for this ${context.collection} product:
-- SKU: ${context.sku}
-- Design Elements: ${context.design_elements.join(', ')}
+Product details:
+- Design says: "${context.detected_text}"
+- Theme: ${context.collection}
 - Colors: ${context.colors.join(', ')}
-- Text: ${context.detected_text}
-- Market Trends: ${context.trends}
 
-Writing Rules:
-- NEVER use the same opening sentence twice
-- Vary your style: sometimes playful, sometimes bold, sometimes nostalgic
-- Use vivid imagery and sensory language
-- Keep 150-250 words
-- Write in second person or descriptive style
-- NO generic phrases like "perfect for" or "great gift for"
-- Focus on the FEELING the design evokes
+Write 2-3 short sentences. Be casual and direct. Just describe what it is and what it's good for. No flowery language, no hype.
 
-Output Format:
-Return ONLY the product description text, no formatting, no extra commentary.`;
+Examples of good tone:
+"This retro baseball design has that vintage vibe everyone loves. Great for jerseys, totes, or team shirts."
+"Bold mama bear graphic with floral accents. Works on any color fabric."
+
+Just the description, nothing else.`;
 
     try {
       const { text } = await generateText({
         model: openai('gpt-4o'),
         prompt,
-        maxTokens: 300,
-        temperature: 0.9,
+        maxTokens: 150,
+        temperature: 0.6,
       });
       
       logger?.info('✅ [ContentGen] Description generated', { 
