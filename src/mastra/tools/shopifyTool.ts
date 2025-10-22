@@ -177,3 +177,43 @@ export const createShopifyProductTool = createTool({
     }
   },
 });
+
+export const deleteShopifyProductTool = createTool({
+  id: "delete-shopify-product",
+  description: "Deletes a product from Shopify by product ID",
+  
+  inputSchema: z.object({
+    product_id: z.string().describe("Shopify product ID to delete"),
+  }),
+  
+  outputSchema: z.object({
+    success: z.boolean(),
+    product_id: z.string(),
+  }),
+  
+  execute: async ({ context, mastra }) => {
+    const logger = mastra?.getLogger();
+    logger?.info('🗑️ [Shopify] Deleting product', { product_id: context.product_id });
+    
+    try {
+      const shopify = await getShopifyClient();
+      const session = shopify.session.customAppSession(process.env.SHOPIFY_STORE_URL!);
+      const client = new shopify.clients.Rest({ session });
+      
+      await client.delete({
+        path: `products/${context.product_id}`,
+      });
+      
+      logger?.info('✅ [Shopify] Product deleted', { product_id: context.product_id });
+      
+      return {
+        success: true,
+        product_id: context.product_id,
+      };
+      
+    } catch (error) {
+      logger?.error('❌ [Shopify] Error deleting product', { error, product_id: context.product_id });
+      throw error;
+    }
+  },
+});
