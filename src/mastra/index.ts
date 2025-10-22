@@ -8,8 +8,9 @@ import { NonRetriableError } from "inngest";
 import { z } from "zod";
 
 import { sharedPostgresStorage } from "./storage";
-import { inngest, inngestServe } from "./inngest";
-import { setupConfigWorkflow } from "./workflows/setupConfigWorkflow";
+import { inngest, inngestServe, registerCronWorkflow } from "./inngest";
+import { productAutomationWorkflow } from "./workflows/productAutomationWorkflow";
+import { contentGeneratorAgent } from "./agents/contentGeneratorAgent";
 
 class ProductionPinoLogger extends MastraLogger {
   protected logger: pino.Logger;
@@ -52,12 +53,20 @@ class ProductionPinoLogger extends MastraLogger {
   }
 }
 
+// Register the automation workflow to run every 2 hours
+// Timezone: Use environment variable or default to Pacific Time
+// Cron: 0 */2 * * * = Every 2 hours at minute 0
+registerCronWorkflow(
+  `TZ=${process.env.SCHEDULE_CRON_TIMEZONE || 'America/Los_Angeles'} ${process.env.SCHEDULE_CRON_EXPRESSION || '0 */2 * * *'}`,
+  productAutomationWorkflow
+);
+
 export const mastra = new Mastra({
   storage: sharedPostgresStorage,
   // Register your workflows here
-  workflows: { setupConfigWorkflow },
+  workflows: { productAutomationWorkflow },
   // Register your agents here
-  agents: {},
+  agents: { contentGeneratorAgent },
   mcpServers: {
     allTools: new MCPServer({
       name: "allTools",
