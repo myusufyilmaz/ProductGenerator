@@ -48,7 +48,7 @@ Product Context:
 Output Format:
 Return ONLY the product description text, no formatting, no extra commentary.`,
   
-  model: openai.chat("gpt-4o"),
+  model: openai.responses("gpt-4o"),
   
   memory: new Memory({
     options: {

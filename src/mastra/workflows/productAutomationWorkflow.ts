@@ -5,7 +5,7 @@ import { listDriveFoldersTool, downloadFolderImagesTool } from "../tools/googleD
 import { analyzeProductImagesTool } from "../tools/googleVisionTool";
 import { researchProductTrendsTool } from "../tools/perplexityTool";
 import { matchProductToCollectionTool } from "../tools/collectionMatchingTool";
-import { contentGeneratorAgent } from "../agents/contentGeneratorAgent";
+import { generateProductDescriptionTool } from "../tools/contentGenerationTool";
 import { seoOptimizationTool } from "../tools/seoOptimizationTool";
 import { qualityValidationTool } from "../tools/qualityValidationTool";
 import { createShopifyProductTool } from "../tools/shopifyTool";
@@ -432,34 +432,34 @@ const processAllFoldersStep = createStep({
           // Step 5: Match to collection
           const collectionMatch = await matchProductToCollectionTool.execute({
             context: {
-              detected_objects: analysis.labels,
-              dominant_colors: colorStrings,
-              detected_text: textString,
-              folder_name: folder.folder_name,
+              folder_path: folder.folder_path,
+              labels: analysis.labels,
+              detected_text: analysis.detected_text,
+              product_type: folder.folder_type,
             },
             runtimeContext,
             mastra,
           });
           
           // Step 6: Generate content
-          const prompt = `Create a compelling product description for a ${collectionMatch.matched_collection_name} product.
-SKU: ${folder.folder_name}
-Design Elements: ${analysis.labels.join(', ')}
-Colors: ${colorStrings.join(', ')}
-Text: ${textString}
-Trends: ${trends.trend_summary}
-
-Create a unique, engaging description (150-200 words).`;
-          
-          const contentResponse = await contentGeneratorAgent.generate([
-            { role: 'user', content: prompt }
-          ]);
+          const contentResponse = await generateProductDescriptionTool.execute({
+            context: {
+              sku: folder.folder_name,
+              collection: collectionMatch.matched_collection_name,
+              design_elements: analysis.labels,
+              colors: colorStrings,
+              detected_text: textString,
+              trends: trends.trend_summary,
+            },
+            runtimeContext,
+            mastra,
+          });
           
           // Step 7: SEO optimization
           const seoResult = await seoOptimizationTool.execute({
             context: {
               title: folder.folder_name,
-              description: contentResponse.text,
+              description: contentResponse.description,
               detected_objects: analysis.labels,
               colors: colorStrings,
             },
@@ -471,9 +471,9 @@ Create a unique, engaging description (150-200 words).`;
           const validation = await qualityValidationTool.execute({
             context: {
               title: folder.folder_name,
-              description: contentResponse.text,
+              description: contentResponse.description,
               seo_meta_description: seoResult.meta_description,
-              suggested_tags: [...collectionMatch.matched_tags, ...seoResult.suggested_tags],
+              suggested_tags: [...collectionMatch.tags_required, ...seoResult.suggested_tags],
               collection_confidence: collectionMatch.confidence_score,
             },
             runtimeContext,
@@ -485,10 +485,10 @@ Create a unique, engaging description (150-200 words).`;
             await createShopifyProductTool.execute({
               context: {
                 title: folder.folder_name,
-                description: contentResponse.text,
+                description: contentResponse.description,
                 images: images.images,
                 collection_id: collectionMatch.matched_collection_id,
-                tags: [...collectionMatch.matched_tags, ...seoResult.suggested_tags],
+                tags: [...collectionMatch.tags_required, ...seoResult.suggested_tags],
                 seo_title: seoResult.seo_title,
                 seo_meta_description: seoResult.meta_description,
                 product_type: collectionMatch.matched_collection_name,
