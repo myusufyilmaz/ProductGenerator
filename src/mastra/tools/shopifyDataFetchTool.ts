@@ -1,7 +1,5 @@
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
-import { shopifyApi, ApiVersion } from "@shopify/shopify-api";
-import "@shopify/shopify-api/adapters/node";
 
 /**
  * Shopify Data Fetch Tool
@@ -15,7 +13,11 @@ import "@shopify/shopify-api/adapters/node";
  * This data is used to automatically build the configuration
  */
 
-function getShopifyClient() {
+async function getShopifyClient() {
+  // Dynamic import to avoid adapter issues
+  const { shopifyApi, ApiVersion } = await import("@shopify/shopify-api");
+  await import("@shopify/shopify-api/adapters/node");
+  
   if (!process.env.SHOPIFY_STORE_URL || !process.env.SHOPIFY_ACCESS_TOKEN) {
     throw new Error("Shopify credentials not configured");
   }
@@ -64,7 +66,7 @@ export const fetchShopifyStoreCatalogTool = createTool({
     logger?.info('🔍 [ShopifyFetch] Fetching store catalog', { include_products: context.include_products });
     
     try {
-      const shopify = getShopifyClient();
+      const shopify = await getShopifyClient();
       const session = shopify.session.customAppSession(process.env.SHOPIFY_STORE_URL!);
       const client = new shopify.clients.Rest({ session });
       
