@@ -1,0 +1,62 @@
+InkMerge SEO Content Automation System - Project Summary
+Project Overview
+InkMerge is a fully autonomous, zero-touch SEO content automation system designed for print-on-demand businesses. The system generates, optimizes, and publishes premium SEO-driven blog articles to a Shopify store with complete autonomy - no human intervention required.
+
+Primary Goals
+1. Zero-Touch Content Generation
+
+Generate 90 premium blog articles per month automatically
+Automatically link to 4,000-5,000 Shopify products
+Operate completely independently during military service deployment
+2. Premium Quality Content
+
+Use top-tier AI models (GPT-4o, o4-mini, Perplexity Sonar Pro, DALL-E 3)
+Maintain SEO scores of 65-80+ through quality gates
+Self-healing system regenerates articles up to 3 times if quality fails
+3. Complete Cost Transparency
+
+Real-time tracking of all AI API usage (OpenAI, Perplexity, SpyFu, NeuronWriter)
+Monthly cost aggregation and dashboard display
+Budget monitoring and optimization
+4. Self-Improvement Engine (JARVIS)
+
+Daily automated audits of APIs and system health
+Automatic API optimization discovery
+SEO adaptation and performance analysis
+Human-approved suggestions for system improvements
+Key Features
+Content Automation Pipeline
+Competitive Keyword Research - SpyFu API for competitive intelligence
+SEO Analysis - NeuronWriter for content scoring and optimization
+Topic Research - Perplexity AI for in-depth research
+AI Content Generation - GPT-4o for premium article writing
+Quality Review - o4-mini for automated quality assurance
+Product Linking - Automatic integration with 4,000+ Shopify products
+Image Generation - DALL-E 3 for custom featured images
+Automated Publishing - Direct publishing to Shopify via Admin API
+Smart Features
+Adaptive Quality Gates - Adjusts SEO requirements based on SpyFu availability (80+ when working, 65+ when down)
+Automatic Category Detection - AI-powered categorization into 6 predefined categories
+Rotating Author Names - 8 authentic author personas for content diversity
+Health Monitoring - 3x daily automated health checks with auto-repair capabilities
+Real-Time Progress Tracker - Visual step-by-step display for article generation
+Technical Stack
+Frontend: React + TypeScript (Vite), shadcn/ui, TanStack Query
+Backend: Node.js + Express.js
+Database: PostgreSQL (Neon serverless) via Drizzle ORM
+External APIs: OpenAI, Perplexity, SpyFu, NeuronWriter, Shopify (Storefront + Admin GraphQL)
+Current Status
+✅ Fully Operational
+
+9 articles successfully published to live Shopify store
+All formatting and excerpt issues resolved
+Health monitoring active with 0 critical issues
+Cost tracking infrastructure operational
+Adaptive quality gates functioning perfectly
+✅ Resilient & Self-Healing
+
+Handles SpyFu API outages with Perplexity fallback
+Automatic article health checks and repairs
+Zero manual intervention required
+Business Vision
+Provide a complete, autonomous SEO content solution for POD businesses that generates high-quality, SEO-optimized content at scale with full AI automation - maximizing organic traffic while minimizing operational overhead during extended deployments.
