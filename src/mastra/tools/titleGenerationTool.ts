@@ -87,8 +87,22 @@ Generate ONE best title and 3 alternative options.`;
           .trim();
       };
       
-      const title = cleanTitle(lines[0]);
+      let title = cleanTitle(lines[0]);
       const alternatives = lines.slice(1, 4).map(line => cleanTitle(line));
+      
+      // FALLBACK: If cleaning removed everything or AI returned empty, create title manually
+      if (!title || title.length === 0) {
+        logger?.warn('⚠️ [TitleGen] Empty title after cleaning, creating fallback', {
+          raw_response: response.text.substring(0, 200),
+        });
+        
+        // Create a sensible title from the detected text and theme
+        const textPhrase = context.detected_text.join(' ').substring(0, 30);
+        title = `${textPhrase} ${context.collection_theme} ${context.product_type}`.trim();
+        
+        // Clean up the fallback title
+        title = title.replace(/\s+/g, ' ').trim();
+      }
       
       logger?.info('✅ [TitleGen] Title generated', { 
         title,
