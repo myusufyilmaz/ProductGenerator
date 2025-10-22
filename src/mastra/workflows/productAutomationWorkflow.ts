@@ -1,7 +1,7 @@
 import { createStep, createWorkflow } from "../inngest";
 import { z } from "zod";
 import { RuntimeContext } from "@mastra/core/di";
-import { listDriveFoldersTool } from "../tools/googleDriveTool";
+import { listDriveFoldersTool, downloadFolderImagesTool } from "../tools/googleDriveTool";
 import { analyzeProductImagesTool } from "../tools/googleVisionTool";
 import { researchProductTrendsTool } from "../tools/perplexityTool";
 import { matchProductToCollectionTool } from "../tools/collectionMatchingTool";
@@ -15,7 +15,7 @@ import { createShopifyProductTool } from "../tools/shopifyTool";
  * 
  * Full automated pipeline:
  * 1. Scan Google Drive for new product folders
- * 2. Analyze images with Google Vision
+ * 2. Download and analyze images with Google Vision
  * 3. Research trends with Perplexity
  * 4. Match to collections
  * 5. Generate creative descriptions
@@ -23,12 +23,12 @@ import { createShopifyProductTool } from "../tools/shopifyTool";
  * 7. Validate quality
  * 8. Publish to Shopify (if confidence >= 75%)
  * 
- * Runs every 2-3 hours automatically
+ * Runs every 2 hours automatically
  */
 
 const scanDriveFoldersStep = createStep({
   id: "scan-drive-folders",
-  description: "Scans Google Drive folders for new product images",
+  description: "Scans Google Drive folders for new product folders to process",
   
   inputSchema: z.object({
     run_id: z.string(),
@@ -36,11 +36,11 @@ const scanDriveFoldersStep = createStep({
   
   outputSchema: z.object({
     folders_found: z.number(),
-    new_products: z.array(z.object({
-      file_id: z.string(),
-      file_name: z.string(),
+    new_folders: z.array(z.object({
+      folder_id: z.string(),
+      folder_name: z.string(),
       folder_path: z.string(),
-      download_url: z.string(),
+      folder_type: z.string(), // 'DTF' or 'POD'
     })),
   }),
   
@@ -50,57 +50,63 @@ const scanDriveFoldersStep = createStep({
     
     const runtimeContext = new RuntimeContext();
     
-    // Scan DTF and POD folders
+    // Scan DTF and POD parent folders for subfolders
     const dtfResult = await listDriveFoldersTool.execute({
-      context: { folder_id: process.env.GOOGLE_DRIVE_DTF_FOLDER_ID || '', recursive: true },
+      context: { folder_name: 'DTF Designs' },
       runtimeContext,
       mastra,
     });
     
     const podResult = await listDriveFoldersTool.execute({
-      context: { folder_id: process.env.GOOGLE_DRIVE_POD_FOLDER_ID || '', recursive: true },
+      context: { folder_name: 'POD Apparel' },
       runtimeContext,
       mastra,
     });
     
-    const allFiles = [...dtfResult.files, ...podResult.files];
+    // Map folders with type information
+    const dtfFolders = dtfResult.folders.map(f => ({
+      folder_id: f.id,
+      folder_name: f.name,
+      folder_path: f.path,
+      folder_type: 'DTF' as const,
+    }));
     
-    // Filter for image files only
-    const imageFiles = allFiles.filter(f => 
-      f.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i)
-    );
+    const podFolders = podResult.folders.map(f => ({
+      folder_id: f.id,
+      folder_name: f.name,
+      folder_path: f.path,
+      folder_type: 'POD' as const,
+    }));
     
-    // TODO: Check database for already processed files
-    // For now, return first 10 as "new"
-    const newProducts = imageFiles.slice(0, 10);
+    const allFolders = [...dtfFolders, ...podFolders];
+    
+    // TODO: Check database for already processed folders
+    // For now, return first 5 as "new"
+    const newFolders = allFolders.slice(0, 5);
     
     logger?.info('✅ [Automation] Drive scan complete', {
-      total_folders: dtfResult.folders.length + podResult.folders.length,
-      total_files: allFiles.length,
-      new_products: newProducts.length,
+      total_folders: allFolders.length,
+      dtf_folders: dtfFolders.length,
+      pod_folders: podFolders.length,
+      new_folders: newFolders.length,
     });
     
     return {
-      folders_found: dtfResult.folders.length + podResult.folders.length,
-      new_products: newProducts.map(f => ({
-        file_id: f.file_id,
-        file_name: f.file_name,
-        folder_path: f.folder_path,
-        download_url: f.download_url,
-      })),
+      folders_found: allFolders.length,
+      new_folders: newFolders,
     };
   },
 });
 
 const processProductStep = createStep({
   id: "process-product",
-  description: "Processes a single product through the full pipeline",
+  description: "Processes a single product folder through the full pipeline",
   
   inputSchema: z.object({
-    file_id: z.string(),
-    file_name: z.string(),
+    folder_id: z.string(),
+    folder_name: z.string(),
     folder_path: z.string(),
-    download_url: z.string(),
+    folder_type: z.string(),
   }),
   
   outputSchema: z.object({
@@ -112,59 +118,79 @@ const processProductStep = createStep({
   
   execute: async ({ inputData, mastra }) => {
     const logger = mastra?.getLogger();
-    logger?.info('🚀 [Automation] Processing product', { file_name: inputData.file_name });
+    logger?.info('🚀 [Automation] Processing product folder', { folder_name: inputData.folder_name });
     
     const runtimeContext = new RuntimeContext();
     
     try {
-      // Step 1: Analyze image
-      logger?.info('👁️ [Automation] Analyzing image with Google Vision');
+      // Step 1: Download images from folder
+      logger?.info('📥 [Automation] Downloading images from folder');
+      const downloadResult = await downloadFolderImagesTool.execute({
+        context: { 
+          folder_id: inputData.folder_id,
+          folder_name: inputData.folder_name,
+        },
+        runtimeContext,
+        mastra,
+      });
+      
+      if (downloadResult.images.length === 0) {
+        logger?.warn('⚠️ [Automation] No images found in folder');
+        return {
+          success: false,
+          status: 'no_images',
+          confidence: 0,
+        };
+      }
+      
+      // Step 2: Analyze images with Google Vision
+      logger?.info('👁️ [Automation] Analyzing images with Google Vision');
       const visionResult = await analyzeProductImagesTool.execute({
         context: { 
-          image_urls: [inputData.download_url],
-          analysis_type: 'full'
+          images: downloadResult.images,
+          sku: inputData.folder_name,
         },
         runtimeContext,
         mastra,
       });
       
-      // Step 2: Research context
-      logger?.info('🔍 [Automation] Researching product context');
+      // Step 3: Research product context with Perplexity
+      logger?.info('🔍 [Automation] Researching product trends');
       const researchResult = await researchProductTrendsTool.execute({
         context: {
-          product_category: inputData.folder_path.split('/')[1] || 'general',
-          visual_keywords: visionResult.labels.slice(0, 5),
-          detected_text: visionResult.text,
+          primary_subjects: visionResult.properties.primary_subjects,
+          product_type: inputData.folder_type === 'DTF' ? 'DTF Design' : 'POD Apparel',
+          detected_text: visionResult.detected_text,
         },
         runtimeContext,
         mastra,
       });
       
-      // Step 3: Match to collection
+      // Step 4: Match to collection
       logger?.info('📂 [Automation] Matching to collection');
       const collectionMatch = await matchProductToCollectionTool.execute({
         context: {
           visual_features: visionResult.labels,
-          detected_text: visionResult.text || '',
+          detected_text: visionResult.detected_text.join(' '),
           folder_path: inputData.folder_path,
-          product_type: inputData.folder_path.includes('/DTF/') ? 'DTF Design' : 'POD Apparel',
+          product_type: inputData.folder_type === 'DTF' ? 'DTF Design' : 'POD Apparel',
         },
         runtimeContext,
         mastra,
       });
       
-      // Step 4: Generate creative description
+      // Step 5: Generate creative description
       logger?.info('✍️ [Automation] Generating product description');
       
       const descriptionPrompt = `Create a unique product description for:
 
-Product: ${inputData.file_name.replace(/\.(jpg|jpeg|png|gif)$/i, '').replace(/[-_]/g, ' ')}
+Product: ${inputData.folder_name}
 Visual Features: ${visionResult.labels.slice(0, 8).join(', ')}
-Colors: ${visionResult.dominant_colors.slice(0, 3).join(', ')}
-Detected Text: ${visionResult.text_annotations.slice(0, 3).join(' ')}
-Market Context: ${researchResult.trend_summary}
+Colors: ${visionResult.dominant_colors.slice(0, 3).map(c => c.hex).join(', ')}
+Detected Text: ${visionResult.detected_text.slice(0, 3).join(' ')}
+Market Trends: ${researchResult.trends.slice(0, 2).join(', ')}
 Target Collection: ${collectionMatch.matched_collection.name}
-Product Type: ${inputData.folder_path.includes('/DTF/') ? 'DTF Design (customizable print)' : 'POD Apparel (ready-to-wear)'}
+Product Type: ${inputData.folder_type === 'DTF' ? 'DTF Design (customizable print)' : 'POD Apparel (ready-to-wear)'}
 
 Write a 150-250 word description that stands out.`;
 
@@ -172,18 +198,18 @@ Write a 150-250 word description that stands out.`;
         [{ role: "user", content: descriptionPrompt }],
         {
           resourceId: "automation",
-          threadId: inputData.file_id,
+          threadId: inputData.folder_id,
           maxSteps: 1,
         }
       );
       
       const productDescription = descriptionResponse.text;
       
-      // Step 5: SEO optimization
+      // Step 6: SEO optimization
       logger?.info('📈 [Automation] Optimizing for SEO');
       const seoResult = await seoOptimizationTool.execute({
         context: {
-          product_title: inputData.file_name.replace(/\.(jpg|jpeg|png|gif)$/i, '').replace(/[-_]/g, ' '),
+          product_title: inputData.folder_name,
           description: productDescription,
           visual_features: visionResult.labels.slice(0, 10),
           theme: collectionMatch.matched_collection.name.split(/[–-]/)[0].trim(),
@@ -192,11 +218,13 @@ Write a 150-250 word description that stands out.`;
         mastra,
       });
       
-      // Step 6: Quality validation
+      // Step 7: Quality validation
       logger?.info('✅ [Automation] Validating quality');
+      
+      // TODO: Query recent descriptions from database for anti-repetition check
       const validation = await qualityValidationTool.execute({
         context: {
-          title: inputData.file_name.replace(/\.(jpg|jpeg|png|gif)$/i, ''),
+          title: inputData.folder_name,
           description: productDescription,
           meta_description: seoResult.meta_description,
           tags: [...collectionMatch.matched_tags, ...seoResult.suggested_tags],
@@ -215,12 +243,20 @@ Write a 150-250 word description that stands out.`;
         issues: validation.issues.length,
       });
       
-      // Step 7: Publish if confidence >= 75%
+      // Step 8: Publish if confidence >= 75%
       if (validation.status === 'auto_publish') {
         logger?.info('🚀 [Automation] Publishing to Shopify');
         
-        // TODO: Create product with real implementation
+        // TODO: Save to database first, then publish
         logger?.warn('⚠️ [Automation] Shopify publishing not yet implemented - would publish product here');
+        
+        // Log what would be published
+        logger?.info('📦 [Automation] Product ready for publishing', {
+          title: inputData.folder_name,
+          collection: collectionMatch.matched_collection.name,
+          confidence: validation.overall_confidence,
+          tags_count: [...collectionMatch.matched_tags, ...seoResult.suggested_tags].length,
+        });
         
         return {
           success: true,
@@ -239,7 +275,7 @@ Write a 150-250 word description that stands out.`;
       
     } catch (error: any) {
       logger?.error('❌ [Automation] Product processing failed', { 
-        file_name: inputData.file_name,
+        folder_name: inputData.folder_name,
         error: error.message,
       });
       
