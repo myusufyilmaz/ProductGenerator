@@ -224,6 +224,81 @@ export const deleteShopifyProductTool = createTool({
   },
 });
 
+export const getProductDetailsTool = createTool({
+  id: "get-product-details",
+  description: "Gets complete details for a product by ID",
+  
+  inputSchema: z.object({
+    product_id: z.string().describe("Shopify product ID"),
+  }),
+  
+  outputSchema: z.object({
+    id: z.string(),
+    title: z.string(),
+    description: z.string(),
+    vendor: z.string(),
+    product_type: z.string(),
+    tags: z.array(z.string()),
+    variants: z.array(z.object({
+      id: z.string(),
+      title: z.string(),
+      sku: z.string(),
+      price: z.string(),
+      inventory_quantity: z.number(),
+    })),
+    images: z.array(z.object({
+      id: z.string(),
+      src: z.string(),
+    })),
+  }),
+  
+  execute: async ({ context, mastra }) => {
+    const logger = mastra?.getLogger();
+    logger?.info('🔍 [Shopify] Fetching product details', { product_id: context.product_id });
+    
+    try {
+      const shopify = await getShopifyClient();
+      const session = shopify.session.customAppSession(process.env.SHOPIFY_STORE_URL!);
+      const client = new shopify.clients.Rest({ session });
+      
+      const response: any = await client.get({
+        path: `products/${context.product_id}`,
+      });
+      
+      const product = response.body?.product;
+      
+      logger?.info('✅ [Shopify] Product fetched', { 
+        product_id: product.id,
+        title: product.title,
+      });
+      
+      return {
+        id: product.id.toString(),
+        title: product.title,
+        description: product.body_html || '',
+        vendor: product.vendor || '',
+        product_type: product.product_type || '',
+        tags: product.tags ? product.tags.split(', ') : [],
+        variants: product.variants.map((v: any) => ({
+          id: v.id.toString(),
+          title: v.title,
+          sku: v.sku || '',
+          price: v.price,
+          inventory_quantity: v.inventory_quantity || 0,
+        })),
+        images: product.images.map((img: any) => ({
+          id: img.id.toString(),
+          src: img.src,
+        })),
+      };
+      
+    } catch (error) {
+      logger?.error('❌ [Shopify] Error fetching product', { error });
+      throw error;
+    }
+  },
+});
+
 export const findProductsByTitleTool = createTool({
   id: "find-products-by-title",
   description: "Finds all products in Shopify that contain a specific string in their title",
