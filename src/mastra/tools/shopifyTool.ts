@@ -111,8 +111,14 @@ export const createShopifyProductTool = createTool({
         metafields_global_description_tag: context.meta_description,
         status: 'active',
         images: imageAttachments,
+        options: [
+          {
+            name: 'Size',
+            values: context.variants.map(v => v.size),
+          }
+        ],
         variants: context.variants.map(variant => ({
-          title: variant.size,
+          option1: variant.size,
           price: variant.price.toString(),
           sku: variant.sku,
           inventory_quantity: variant.inventory_quantity,
