@@ -422,7 +422,14 @@ const processAllFoldersStep = createStep({
           
           // Extract simple formats for downstream tools
           const colorStrings = analysis.dominant_colors.map(c => c.hex);
-          const textString = analysis.detected_text.join(' ');
+          
+          // Clean detected text - remove pure numbers and short fragments
+          const cleanedText = analysis.detected_text
+            .filter(text => !/^\d+$/.test(text))  // Remove pure numbers like "00", "123"
+            .filter(text => text.length > 2)       // Remove single/double chars
+            .join(' ');
+          
+          const textString = cleanedText || analysis.detected_text.join(' '); // Fallback to original if all filtered
           
           // Step 4: Research trends
           const trends = await researchProductTrendsTool.execute({
