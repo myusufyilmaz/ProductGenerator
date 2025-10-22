@@ -44,6 +44,11 @@ export const matchProductToCollectionTool = createTool({
     try {
       const config = loadShopifyConfigSync();
       
+      logger?.info('📦 [CollectionMatching] Config loaded', {
+        collections_count: config.collections.length,
+        first_collection: config.collections[0]?.name,
+      });
+      
       // Extract hints from folder path
       const folderHints = context.folder_path.toLowerCase().split('/').flatMap(part => 
         part.split(/[-_\s]+/).filter(w => w.length > 2)
@@ -82,6 +87,12 @@ export const matchProductToCollectionTool = createTool({
             if (term.includes(keywordLower) || keywordLower.includes(term)) {
               score += collection.boost_score || 1;
               matched_keywords.push(keyword);
+              logger?.debug('✅ [CollectionMatching] Keyword match', {
+                collection: collection.name,
+                keyword: keyword,
+                term: term,
+                score: score,
+              });
               break;  // Count each keyword only once
             }
           }
@@ -124,6 +135,15 @@ export const matchProductToCollectionTool = createTool({
         const defaultCollection = config.collections.find(c => 
           c.tags_required.some(tag => tag.includes(context.product_type.toLowerCase()))
         ) || config.collections[0];
+        
+        if (!defaultCollection) {
+          throw new Error('No collections found in config');
+        }
+        
+        logger?.info('📌 [CollectionMatching] Using default collection', {
+          name: defaultCollection.name,
+          id: defaultCollection.id,
+        });
         
         return {
           collection_id: defaultCollection.id,

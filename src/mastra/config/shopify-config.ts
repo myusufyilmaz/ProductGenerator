@@ -1,4 +1,5 @@
 import { z } from "zod";
+import * as generatedConfig from "./generated-shopify-config.json";
 
 /**
  * Shopify Product Listing Configuration
@@ -65,32 +66,6 @@ export type ShopifyConfig = z.infer<typeof ShopifyConfigSchema>;
  * Loads from generated JSON file if available
  */
 export function loadShopifyConfigSync(): ShopifyConfig {
-  try {
-    const fs = require('fs');
-    const path = require('path');
-    const configPath = path.join(process.cwd(), 'src/mastra/config/generated-shopify-config.json');
-    
-    if (fs.existsSync(configPath)) {
-      const configData = fs.readFileSync(configPath, 'utf-8');
-      return JSON.parse(configData);
-    }
-  } catch (error) {
-    console.warn('[Config] Could not load from file, using minimal fallback');
-  }
-  
-  // Fallback
-  return {
-    sales_channels: ["Online Store"],
-    product_types: {},
-    collections: [],
-    theme_tags: [],
-    style_tags: [],
-    audience_tags: [],
-    metafield_options: {},
-    confidence_thresholds: {
-      auto_publish: 75,
-      quarantine: 60,
-      reject: 60,
-    },
-  };
+  // Import the JSON config directly (bundler will include it)
+  return generatedConfig as ShopifyConfig;
 }
