@@ -305,6 +305,219 @@ Write a 150-250 word description that stands out.`;
   },
 });
 
+const aggregateResultsStep = createStep({
+  id: "aggregate-results",
+  description: "Aggregate results from all processed products",
+  
+  inputSchema: z.object({
+    folders_found: z.number(),
+    processed_results: z.array(z.object({
+      success: z.boolean(),
+      status: z.string(),
+      confidence: z.number(),
+    })),
+  }),
+  
+  outputSchema: z.object({
+    total_scanned: z.number(),
+    total_processed: z.number(),
+    published: z.number(),
+    needs_review: z.number(),
+    failed: z.number(),
+  }),
+  
+  execute: async ({ inputData, mastra }) => {
+    const logger = mastra?.getLogger();
+    const { folders_found, processed_results } = inputData;
+    
+    const published = processed_results.filter(r => r.status === 'published').length;
+    const needs_review = processed_results.filter(r => r.status === 'review').length;
+    const failed = processed_results.filter(r => !r.success).length;
+    
+    logger?.info('📊 [Automation] Run complete', {
+      total_scanned: folders_found,
+      total_processed: processed_results.length,
+      published,
+      needs_review,
+      failed,
+    });
+    
+    return {
+      total_scanned: folders_found,
+      total_processed: processed_results.length,
+      published,
+      needs_review,
+      failed,
+    };
+  },
+});
+
+const processAllFoldersStep = createStep({
+  id: "process-all-folders",
+  description: "Process all new folders through the complete pipeline",
+  
+  inputSchema: z.object({
+    folders_found: z.number(),
+    new_folders: z.array(z.object({
+      folder_id: z.string(),
+      folder_name: z.string(),
+      folder_path: z.string(),
+      folder_type: z.string(),
+    })),
+  }),
+  
+  outputSchema: z.object({
+    folders_found: z.number(),
+    processed_results: z.array(z.object({
+      success: z.boolean(),
+      status: z.string(),
+      confidence: z.number(),
+    })),
+  }),
+  
+  execute: async ({ inputData, mastra }) => {
+    const logger = mastra?.getLogger();
+    const { new_folders, folders_found } = inputData;
+    
+    logger?.info('🚀 [Automation] Processing all folders', { count: new_folders.length });
+    
+    const runtimeContext = new RuntimeContext();
+    
+    // Process each folder through the complete pipeline
+    const results = await Promise.all(
+      new_folders.map(async (folder) => {
+        try {
+          logger?.info(`📦 [Automation] Starting folder: ${folder.folder_name}`);
+          
+          // Step 2: Download images
+          const images = await downloadFolderImagesTool.execute({
+            context: { 
+              folder_id: folder.folder_id,
+              folder_name: folder.folder_name,
+            },
+            runtimeContext,
+            mastra,
+          });
+          
+          if (images.images.length === 0) {
+            logger?.warn(`⚠️ [Automation] No images found in ${folder.folder_name}`);
+            return { success: false, status: 'failed', confidence: 0 };
+          }
+          
+          // Step 3: Analyze with Google Vision
+          const analysis = await analyzeProductImagesTool.execute({
+            context: { 
+              images: images.images,
+              sku: folder.folder_name,
+            },
+            runtimeContext,
+            mastra,
+          });
+          
+          // Extract simple formats for downstream tools
+          const colorStrings = analysis.dominant_colors.map(c => c.hex);
+          const textString = analysis.detected_text.join(' ');
+          
+          // Step 4: Research trends
+          const trends = await researchProductTrendsTool.execute({
+            context: {
+              design_elements: analysis.labels,
+              colors: colorStrings,
+              detected_text: textString,
+            },
+            runtimeContext,
+            mastra,
+          });
+          
+          // Step 5: Match to collection
+          const collectionMatch = await matchProductToCollectionTool.execute({
+            context: {
+              detected_objects: analysis.labels,
+              dominant_colors: colorStrings,
+              detected_text: textString,
+              folder_name: folder.folder_name,
+            },
+            runtimeContext,
+            mastra,
+          });
+          
+          // Step 6: Generate content
+          const prompt = `Create a compelling product description for a ${collectionMatch.matched_collection_name} product.
+SKU: ${folder.folder_name}
+Design Elements: ${analysis.labels.join(', ')}
+Colors: ${colorStrings.join(', ')}
+Text: ${textString}
+Trends: ${trends.trend_summary}
+
+Create a unique, engaging description (150-200 words).`;
+          
+          const contentResponse = await contentGeneratorAgent.generate([
+            { role: 'user', content: prompt }
+          ]);
+          
+          // Step 7: SEO optimization
+          const seoResult = await seoOptimizationTool.execute({
+            context: {
+              title: folder.folder_name,
+              description: contentResponse.text,
+              detected_objects: analysis.labels,
+              colors: colorStrings,
+            },
+            runtimeContext,
+            mastra,
+          });
+          
+          // Step 8: Quality validation
+          const validation = await qualityValidationTool.execute({
+            context: {
+              title: folder.folder_name,
+              description: contentResponse.text,
+              seo_meta_description: seoResult.meta_description,
+              suggested_tags: [...collectionMatch.matched_tags, ...seoResult.suggested_tags],
+              collection_confidence: collectionMatch.confidence_score,
+            },
+            runtimeContext,
+            mastra,
+          });
+          
+          // Step 9: Publish if quality is high enough
+          if (validation.overall_confidence >= 75) {
+            await createShopifyProductTool.execute({
+              context: {
+                title: folder.folder_name,
+                description: contentResponse.text,
+                images: images.images,
+                collection_id: collectionMatch.matched_collection_id,
+                tags: [...collectionMatch.matched_tags, ...seoResult.suggested_tags],
+                seo_title: seoResult.seo_title,
+                seo_meta_description: seoResult.meta_description,
+                product_type: collectionMatch.matched_collection_name,
+              },
+              runtimeContext,
+              mastra,
+            });
+            
+            logger?.info(`✅ [Automation] Published: ${folder.folder_name}`);
+            return { success: true, status: 'published', confidence: validation.overall_confidence };
+          } else {
+            logger?.info(`⏸️ [Automation] Needs review: ${folder.folder_name} (${validation.overall_confidence}%)`);
+            return { success: true, status: validation.status, confidence: validation.overall_confidence };
+          }
+          
+        } catch (error: any) {
+          logger?.error(`❌ [Automation] Failed: ${folder.folder_name}`, { error: error.message });
+          return { success: false, status: 'failed', confidence: 0 };
+        }
+      })
+    );
+    
+    return {
+      folders_found,
+      processed_results: results,
+    };
+  },
+});
+
 export const productAutomationWorkflow = createWorkflow({
   id: "product-automation-workflow",
   description: "Automated product listing pipeline: scan → analyze → generate → validate → publish",
@@ -322,4 +535,6 @@ export const productAutomationWorkflow = createWorkflow({
   }),
 })
   .then(scanDriveFoldersStep)
+  .then(processAllFoldersStep)
+  .then(aggregateResultsStep)
   .commit();
