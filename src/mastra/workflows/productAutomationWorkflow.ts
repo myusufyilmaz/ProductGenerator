@@ -447,7 +447,22 @@ const processAllFoldersStep = createStep({
             mastra,
           });
           
-          // Step 6: Generate content
+          // Step 6: Generate customer-friendly product title
+          const { generateProductTitleTool } = await import('../tools/titleGenerationTool');
+          const titleResult = await generateProductTitleTool.execute({
+            context: {
+              detected_text: analysis.detected_text,
+              visual_labels: analysis.labels,
+              collection_theme: collectionMatch.collection_name.replace(' – DTF Designs', '').replace(' – POD Apparel', ''),
+              product_type: folder.folder_type === 'DTF' ? 'DTF Transfer' : 'Apparel',
+            },
+            runtimeContext,
+            mastra,
+          });
+          
+          const productTitle = titleResult.title;
+          
+          // Step 7: Generate content
           const trendsSummary = `${trends.context}. Keywords: ${trends.keywords.join(', ')}. Angles: ${trends.creative_angles.join('; ')}`;
           
           const contentResponse = await generateProductDescriptionTool.execute({
@@ -463,10 +478,10 @@ const processAllFoldersStep = createStep({
             mastra,
           });
           
-          // Step 7: SEO optimization
+          // Step 8: SEO optimization
           const seoResult = await seoOptimizationTool.execute({
             context: {
-              product_title: folder.folder_name,
+              product_title: productTitle,
               description: contentResponse.description,
               visual_features: analysis.labels,
               theme: collectionMatch.collection_name,
@@ -501,13 +516,13 @@ const processAllFoldersStep = createStep({
           }
           
           // Defensive: ensure description exists
-          const description = contentResponse?.description || `${folder.folder_name} DTF Design`;
+          const description = contentResponse?.description || `${productTitle} - Premium DTF Transfer Design`;
           const metaDescription = seoResult?.meta_description || description.substring(0, 160);
           
-          // Step 8: Quality validation
+          // Step 9: Quality validation
           const validation = await qualityValidationTool.execute({
             context: {
-              title: folder.folder_name,
+              title: productTitle,
               description: description,
               meta_description: metaDescription,
               tags: allTags,
@@ -546,16 +561,17 @@ const processAllFoldersStep = createStep({
             // Continue with publishing if duplicate check fails
           }
           
-          // Step 9: Publish if quality meets threshold (enforced by quality validation tool)
+          // Step 10: Publish if quality meets threshold (enforced by quality validation tool)
           if (validation.status === 'auto_publish' && validation.overall_confidence >= 96) {
-            const urlHandle = folder.folder_name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            // Generate URL handle from product title
+            const urlHandle = productTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
             
             // Get variant config based on product type
             const config = loadShopifyConfigSync();
             const productTypeKey = folder.folder_path.startsWith('DTF') ? 'DTF' : 'POD';
             const productTypeConfig = config.product_types[productTypeKey];
             
-            // Build variants from config
+            // Build variants from config (SKUs still use folder name for tracking)
             const variants = productTypeConfig.variants.map((variantConfig: any) => ({
               sku: `${folder.folder_name}-${variantConfig.sku_suffix}`,
               size: variantConfig.size,
@@ -563,11 +579,11 @@ const processAllFoldersStep = createStep({
               inventory_quantity: variantConfig.inventory_quantity || 5000,
             }));
             
-            logger?.info(`📦 [Automation] Creating ${variants.length} variants for ${folder.folder_name}`);
+            logger?.info(`📦 [Automation] Creating ${variants.length} variants for ${productTitle} (SKU: ${folder.folder_name})`);
             
             await createShopifyProductTool.execute({
               context: {
-                title: seoResult?.seo_title || folder.folder_name,
+                title: productTitle,
                 description: description,
                 meta_description: metaDescription,
                 url_handle: urlHandle,
@@ -582,10 +598,10 @@ const processAllFoldersStep = createStep({
               mastra,
             });
             
-            logger?.info(`✅ [Automation] Published: ${folder.folder_name}`);
+            logger?.info(`✅ [Automation] Published: ${productTitle} (SKU: ${folder.folder_name})`);
             results.push({ success: true, status: 'published', confidence: validation.overall_confidence });
           } else {
-            logger?.info(`⏸️ [Automation] Needs review: ${folder.folder_name} (${validation.overall_confidence}%)`);
+            logger?.info(`⏸️ [Automation] Needs review: ${productTitle} (${validation.overall_confidence}%)`);
             results.push({ success: true, status: validation.status, confidence: validation.overall_confidence });
           }
           
