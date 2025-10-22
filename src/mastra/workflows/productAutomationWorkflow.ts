@@ -9,6 +9,7 @@ import { generateProductDescriptionTool } from "../tools/contentGenerationTool";
 import { seoOptimizationTool } from "../tools/seoOptimizationTool";
 import { qualityValidationTool } from "../tools/qualityValidationTool";
 import { createShopifyProductTool } from "../tools/shopifyTool";
+import { loadShopifyConfigSync } from "../config/shopify-config";
 
 /**
  * Product Automation Workflow
@@ -322,6 +323,7 @@ const aggregateResultsStep = createStep({
     total_scanned: z.number(),
     total_processed: z.number(),
     published: z.number(),
+    duplicates: z.number(),
     needs_review: z.number(),
     failed: z.number(),
   }),
@@ -331,6 +333,7 @@ const aggregateResultsStep = createStep({
     const { folders_found, processed_results } = inputData;
     
     const published = processed_results.filter(r => r.status === 'published').length;
+    const duplicates = processed_results.filter(r => r.status === 'duplicate').length;
     const needs_review = processed_results.filter(r => r.status === 'review').length;
     const failed = processed_results.filter(r => !r.success).length;
     
@@ -338,6 +341,7 @@ const aggregateResultsStep = createStep({
       total_scanned: folders_found,
       total_processed: processed_results.length,
       published,
+      duplicates,
       needs_review,
       failed,
     });
@@ -346,6 +350,7 @@ const aggregateResultsStep = createStep({
       total_scanned: folders_found,
       total_processed: processed_results.length,
       published,
+      duplicates,
       needs_review,
       failed,
     };
@@ -519,9 +524,54 @@ const processAllFoldersStep = createStep({
             return { success: true, status: 'review', confidence: validation.overall_confidence };
           }
           
+          // DUPLICATE DETECTION: Check if this SKU already exists in Shopify
+          try {
+            const { shopifyApi, ApiVersion } = await import("@shopify/shopify-api");
+            await import("@shopify/shopify-api/adapters/node");
+            const shopify = shopifyApi({
+              apiSecretKey: process.env.SHOPIFY_ACCESS_TOKEN!,
+              apiVersion: ApiVersion.October24,
+              isCustomStoreApp: true,
+              adminApiAccessToken: process.env.SHOPIFY_ACCESS_TOKEN!,
+              isEmbeddedApp: false,
+              hostName: process.env.SHOPIFY_STORE_URL!.replace(/^https?:\/\//, ''),
+            });
+            const session = shopify.session.customAppSession(process.env.SHOPIFY_STORE_URL!);
+            const client = new shopify.clients.Rest({ session });
+            
+            // Search for products with this SKU in the title (Shopify doesn't have direct SKU search in REST API)
+            const searchResponse: any = await client.get({
+              path: 'products',
+              query: { limit: 1, title: folder.folder_name },
+            });
+            
+            if (searchResponse.body?.products?.length > 0) {
+              logger?.warn(`⚠️ [Automation] Skipping duplicate: ${folder.folder_name} already exists (ID: ${searchResponse.body.products[0].id})`);
+              return { success: true, status: 'duplicate', confidence: validation.overall_confidence };
+            }
+          } catch (error: any) {
+            logger?.warn(`⚠️ [Automation] Duplicate check failed for ${folder.folder_name}: ${error.message}`);
+            // Continue with publishing if duplicate check fails
+          }
+          
           // Step 9: Publish if quality meets threshold (enforced by quality validation tool)
           if (validation.status === 'auto_publish' && validation.overall_confidence >= 96) {
             const urlHandle = folder.folder_name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            
+            // Get variant config based on product type
+            const config = loadShopifyConfigSync();
+            const productTypeKey = folder.folder_path.startsWith('DTF') ? 'DTF' : 'POD';
+            const productTypeConfig = config.product_types[productTypeKey];
+            
+            // Build variants from config
+            const variants = productTypeConfig.variants.map((variantConfig: any) => ({
+              sku: `${folder.folder_name}-${variantConfig.sku_suffix}`,
+              size: variantConfig.size,
+              price: variantConfig.price,
+              inventory_quantity: variantConfig.inventory_quantity || 5000,
+            }));
+            
+            logger?.info(`📦 [Automation] Creating ${variants.length} variants for ${folder.folder_name}`);
             
             await createShopifyProductTool.execute({
               context: {
@@ -529,15 +579,10 @@ const processAllFoldersStep = createStep({
                 description: description,
                 meta_description: metaDescription,
                 url_handle: urlHandle,
-                product_type: collectionMatch.collection_name,
-                vendor: 'InkMerge',
+                product_type: productTypeConfig.type_name,
+                vendor: productTypeConfig.vendor,
                 tags: allTags,
-                variants: [{
-                  sku: folder.folder_name,
-                  size: 'One Size',
-                  price: 24.99,
-                  inventory_quantity: 999,
-                }],
+                variants: variants,
                 images: images.images,
                 collection_id: collectionMatch.collection_id,
               },
@@ -578,6 +623,7 @@ export const productAutomationWorkflow = createWorkflow({
     total_scanned: z.number(),
     total_processed: z.number(),
     published: z.number(),
+    duplicates: z.number(),
     needs_review: z.number(),
     failed: z.number(),
   }),
