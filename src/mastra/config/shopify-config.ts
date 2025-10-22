@@ -31,6 +31,7 @@ export type Variant = z.infer<typeof VariantSchema>;
 // Product type configuration
 export const ProductTypeConfigSchema = z.object({
   type_name: z.string().describe("Shopify product type (e.g., 'DTF Design')"),
+  product_category: z.string().optional().describe("Shopify Product Category taxonomy"),
   variants: z.array(VariantSchema).describe("Available variants for this product type"),
   vendor: z.string().describe("Vendor name"),
 });
@@ -72,6 +73,7 @@ export function loadShopifyConfigSync(): ShopifyConfig {
     product_types: {
       "DTF": {
         type_name: "DTF Design",
+        product_category: "gid://shopify/TaxonomyCategory/aa-3-1",
         vendor: "InkMerge",
         variants: [
           { size: "Adult Left Chest  (4\")", sku_suffix: "LC04IN", price: 1.99 },
@@ -83,6 +85,7 @@ export function loadShopifyConfigSync(): ShopifyConfig {
       },
       "POD": {
         type_name: "POD Apparel",
+        product_category: "gid://shopify/TaxonomyCategory/aa-3-1",
         vendor: "InkMerge",
         variants: [
           { size: "Small", sku_suffix: "S", price: 25.00 },

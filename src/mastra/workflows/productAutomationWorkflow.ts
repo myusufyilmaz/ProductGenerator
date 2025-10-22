@@ -588,6 +588,7 @@ const processAllFoldersStep = createStep({
                 meta_description: metaDescription,
                 url_handle: urlHandle,
                 product_type: productTypeConfig.type_name,
+                product_category: productTypeConfig.product_category,
                 vendor: productTypeConfig.vendor,
                 tags: allTags,
                 variants: variants,

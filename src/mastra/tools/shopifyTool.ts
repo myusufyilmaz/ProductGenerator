@@ -44,6 +44,7 @@ export const createShopifyProductTool = createTool({
     meta_description: z.string().describe("SEO meta description"),
     url_handle: z.string().describe("URL-friendly product handle"),
     product_type: z.string().describe("Product type (e.g., 'DTF Design')"),
+    product_category: z.string().optional().describe("Shopify Product Category (e.g., 'Apparel & Accessories > Clothing > Activewear > T-shirts')"),
     vendor: z.string().describe("Vendor name"),
     tags: z.array(z.string()).describe("Product tags"),
     variants: z.array(z.object({
@@ -105,6 +106,7 @@ export const createShopifyProductTool = createTool({
         body_html: context.description,
         vendor: context.vendor,
         product_type: context.product_type,
+        product_category: context.product_category || undefined,
         tags: context.tags.join(', '),
         handle: context.url_handle,
         metafields_global_title_tag: context.title,
