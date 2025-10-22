@@ -142,8 +142,13 @@ const saveConfigurationStep = createStep({
     logger?.info('💾 [SetupConfig] Step 3: Saving configuration');
     
     try {
-      // Save to file for easy inspection and runtime use
-      const configPath = path.join(process.cwd(), 'src/mastra/config/generated-shopify-config.json');
+      // Save to home directory (accessible from bundled code)
+      const configPath = '/home/runner/workspace/src/mastra/config/generated-shopify-config.json';
+      
+      // Ensure directory exists
+      await fs.mkdir(path.dirname(configPath), { recursive: true });
+      
+      // Save configuration
       await fs.writeFile(configPath, JSON.stringify(inputData.config, null, 2), 'utf-8');
       
       logger?.info('✅ [SetupConfig] Configuration saved', { 
