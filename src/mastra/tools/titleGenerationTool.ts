@@ -19,8 +19,8 @@ export const generateProductTitleTool = createTool({
   }),
   
   outputSchema: z.object({
-    title: z.string().describe("Customer-friendly product title (50-70 characters)"),
-    alternative_titles: z.array(z.string()).describe("3 alternative title options"),
+    title: z.string().describe("Customer-friendly product title (40-60 characters)"),
+    alternative_titles: z.array(z.string()).optional().describe("Alternative title options"),
   }),
   
   execute: async ({ context, mastra }) => {
@@ -33,75 +33,50 @@ export const generateProductTitleTool = createTool({
     try {
       const { generateText } = await import("ai");
       
-      const prompt = `You are an e-commerce product naming expert. Generate a customer-friendly, SEO-optimized product title.
+      const prompt = `Create a product title for a ${context.product_type}.
 
-DETECTED TEXT IN IMAGE: ${context.detected_text.join(', ')}
-VISUAL ELEMENTS: ${context.visual_labels.join(', ')}
-COLLECTION THEME: ${context.collection_theme}
-PRODUCT TYPE: ${context.product_type}
+Text on design: ${context.detected_text.join(', ')}
+Theme: ${context.collection_theme}
 
-REQUIREMENTS:
-1. Title must be 50-70 characters
-2. Include the main text/phrase from the image if meaningful
-3. Include the theme (${context.collection_theme})
-4. Include product type (${context.product_type})
-5. Be searchable - think about what customers would type
-6. Be descriptive but concise
-7. Use title case capitalization
-8. NO SKU codes or technical jargon
+Rules:
+- Use the main phrase from the design (ignore random numbers like "00" or decorative elements)
+- Add the theme: ${context.collection_theme}
+- Add "DTF Transfer" at the end
+- 40-60 characters total
+- Natural, searchable title
 
-GOOD EXAMPLES:
-- "Home Run Hero Baseball DTF Transfer Design"
-- "Vintage Baseball Diamond DTF Heat Transfer"
-- "Strike Zone Champion Baseball Graphic Design"
-- "Baseball Mom Life DTF Transfer Print"
+Examples:
+"Pitches Be Crazy Baseball DTF Transfer"
+"Baseball Mama Life DTF Transfer"
+"Strike Out Cancer Baseball DTF Transfer"
 
-BAD EXAMPLES:
-- "BASEBALL10097134" (just SKU)
-- "Design" (too generic)
-- "Baseball Product" (not specific enough)
-
-Generate ONE best title and 3 alternative options.`;
+Return ONLY the title, nothing else.`;
 
       const response = await generateText({
         model: openai('gpt-4o'),
         prompt,
-        temperature: 0.7,
+        temperature: 0.5,
       });
       
-      // Clean up the AI response to extract just the title
-      const lines = response.text.trim().split('\n').filter(line => line.trim());
+      // Clean up response - remove quotes, extra whitespace
+      let title = response.text.trim()
+        .replace(/^["'`]/g, '')
+        .replace(/["'`]$/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
       
-      // Remove markdown formatting, prefixes like "Best Title:", numbering, quotes
-      const cleanTitle = (rawTitle: string) => {
-        return rawTitle
-          .replace(/^\*\*Best Title:\*\*\s*/i, '')  // Remove "**Best Title:**"
-          .replace(/^###?\s*Best Title:\s*/i, '')   // Remove "### Best Title:" or "## Best Title:"
-          .replace(/^Best Title:\s*/i, '')          // Remove "Best Title:"
-          .replace(/^["'`]/g, '')                   // Remove leading quotes
-          .replace(/["'`]$/g, '')                   // Remove trailing quotes
-          .replace(/^\d+\.\s*/, '')                 // Remove numbering like "1. "
-          .replace(/^\*\*/g, '')                    // Remove leading **
-          .replace(/\*\*$/g, '')                    // Remove trailing **
-          .replace(/^Title:\s*/i, '')               // Remove "Title:"
-          .trim();
-      };
-      
-      let title = cleanTitle(lines[0]);
-      const alternatives = lines.slice(1, 4).map(line => cleanTitle(line));
-      
-      // FALLBACK: If cleaning removed everything or AI returned empty, create title manually
+      // FALLBACK: If empty, create title from detected text
       if (!title || title.length === 0) {
-        logger?.warn('⚠️ [TitleGen] Empty title after cleaning, creating fallback', {
-          raw_response: response.text.substring(0, 200),
-        });
+        logger?.warn('⚠️ [TitleGen] Empty response, using fallback');
         
-        // Create a sensible title from the detected text and theme
-        const textPhrase = context.detected_text.join(' ').substring(0, 30);
-        title = `${textPhrase} ${context.collection_theme} ${context.product_type}`.trim();
+        // Filter out pure numbers and short fragments
+        const meaningfulText = context.detected_text
+          .filter(text => !/^\d+$/.test(text)) // Remove pure numbers like "00"
+          .filter(text => text.length > 2)      // Remove single chars
+          .join(' ')
+          .substring(0, 30);
         
-        // Clean up the fallback title
-        title = title.replace(/\s+/g, ' ').trim();
+        title = `${meaningfulText} ${context.collection_theme} DTF Transfer`.trim();
       }
       
       logger?.info('✅ [TitleGen] Title generated', { 
@@ -111,7 +86,7 @@ Generate ONE best title and 3 alternative options.`;
       
       return {
         title,
-        alternative_titles: alternatives,
+        alternative_titles: [],
       };
       
     } catch (error: any) {
