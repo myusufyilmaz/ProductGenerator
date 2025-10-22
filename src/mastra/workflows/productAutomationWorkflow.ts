@@ -1,9 +1,9 @@
 import { createStep, createWorkflow } from "../inngest";
 import { z } from "zod";
 import { RuntimeContext } from "@mastra/core/di";
-import { listGoogleDriveFoldersTool } from "../tools/googleDriveTool";
-import { analyzeImageWithVisionTool } from "../tools/googleVisionTool";
-import { researchProductContextTool } from "../tools/perplexityTool";
+import { listDriveFoldersTool } from "../tools/googleDriveTool";
+import { analyzeProductImagesTool } from "../tools/googleVisionTool";
+import { researchProductTrendsTool } from "../tools/perplexityTool";
 import { matchProductToCollectionTool } from "../tools/collectionMatchingTool";
 import { contentGeneratorAgent } from "../agents/contentGeneratorAgent";
 import { seoOptimizationTool } from "../tools/seoOptimizationTool";
@@ -51,13 +51,13 @@ const scanDriveFoldersStep = createStep({
     const runtimeContext = new RuntimeContext();
     
     // Scan DTF and POD folders
-    const dtfResult = await listGoogleDriveFoldersTool.execute({
+    const dtfResult = await listDriveFoldersTool.execute({
       context: { folder_id: process.env.GOOGLE_DRIVE_DTF_FOLDER_ID || '', recursive: true },
       runtimeContext,
       mastra,
     });
     
-    const podResult = await listGoogleDriveFoldersTool.execute({
+    const podResult = await listDriveFoldersTool.execute({
       context: { folder_id: process.env.GOOGLE_DRIVE_POD_FOLDER_ID || '', recursive: true },
       runtimeContext,
       mastra,
@@ -119,19 +119,22 @@ const processProductStep = createStep({
     try {
       // Step 1: Analyze image
       logger?.info('👁️ [Automation] Analyzing image with Google Vision');
-      const visionResult = await analyzeImageWithVisionTool.execute({
-        context: { image_url: inputData.download_url },
+      const visionResult = await analyzeProductImagesTool.execute({
+        context: { 
+          image_urls: [inputData.download_url],
+          analysis_type: 'full'
+        },
         runtimeContext,
         mastra,
       });
       
       // Step 2: Research context
       logger?.info('🔍 [Automation] Researching product context');
-      const researchResult = await researchProductContextTool.execute({
+      const researchResult = await researchProductTrendsTool.execute({
         context: {
-          visual_description: visionResult.labels.slice(0, 5).join(', '),
-          detected_text: visionResult.text_annotations.slice(0, 3).join(' '),
-          colors: visionResult.dominant_colors.slice(0, 3),
+          product_category: inputData.folder_path.split('/')[1] || 'general',
+          visual_keywords: visionResult.labels.slice(0, 5),
+          detected_text: visionResult.text,
         },
         runtimeContext,
         mastra,
@@ -142,7 +145,7 @@ const processProductStep = createStep({
       const collectionMatch = await matchProductToCollectionTool.execute({
         context: {
           visual_features: visionResult.labels,
-          detected_text: visionResult.text_annotations,
+          detected_text: visionResult.text || '',
           folder_path: inputData.folder_path,
           product_type: inputData.folder_path.includes('/DTF/') ? 'DTF Design' : 'POD Apparel',
         },
