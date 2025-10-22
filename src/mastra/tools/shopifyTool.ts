@@ -217,3 +217,85 @@ export const deleteShopifyProductTool = createTool({
     }
   },
 });
+
+export const findProductsByTitleTool = createTool({
+  id: "find-products-by-title",
+  description: "Finds all products in Shopify that contain a specific string in their title",
+  
+  inputSchema: z.object({
+    title_contains: z.string().describe("String to search for in product titles"),
+  }),
+  
+  outputSchema: z.object({
+    products: z.array(z.object({
+      id: z.string(),
+      title: z.string(),
+      variants_count: z.number(),
+    })),
+    total_found: z.number(),
+  }),
+  
+  execute: async ({ context, mastra }) => {
+    const logger = mastra?.getLogger();
+    logger?.info('🔍 [Shopify] Searching for products', { title_contains: context.title_contains });
+    
+    try {
+      const shopify = await getShopifyClient();
+      const session = shopify.session.customAppSession(process.env.SHOPIFY_STORE_URL!);
+      const client = new shopify.clients.Rest({ session });
+      
+      const allProducts: any[] = [];
+      let hasMore = true;
+      let pageInfo: any = null;
+      
+      // Fetch all products (Shopify paginates at 250 max)
+      while (hasMore) {
+        const query: any = { limit: 250, fields: 'id,title,variants' };
+        if (pageInfo) {
+          query.page_info = pageInfo;
+        }
+        
+        const response: any = await client.get({
+          path: 'products',
+          query,
+        });
+        
+        const products = response.body?.products || [];
+        allProducts.push(...products);
+        
+        // Check for pagination
+        const linkHeader = response.headers?.link;
+        if (linkHeader && linkHeader.includes('rel="next"')) {
+          const match = linkHeader.match(/<[^>]*page_info=([^&>]+)/);
+          pageInfo = match ? match[1] : null;
+          hasMore = !!pageInfo;
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      // Filter products by title
+      const matchingProducts = allProducts
+        .filter((p: any) => p.title.toLowerCase().includes(context.title_contains.toLowerCase()))
+        .map((p: any) => ({
+          id: p.id.toString(),
+          title: p.title,
+          variants_count: p.variants?.length || 0,
+        }));
+      
+      logger?.info('✅ [Shopify] Search complete', { 
+        total_found: matchingProducts.length,
+        searched: allProducts.length,
+      });
+      
+      return {
+        products: matchingProducts,
+        total_found: matchingProducts.length,
+      };
+      
+    } catch (error) {
+      logger?.error('❌ [Shopify] Error searching products', { error });
+      throw error;
+    }
+  },
+});

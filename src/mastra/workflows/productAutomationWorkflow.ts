@@ -388,9 +388,9 @@ const processAllFoldersStep = createStep({
     
     const runtimeContext = new RuntimeContext();
     
-    // Process each folder through the complete pipeline
-    const results = await Promise.all(
-      new_folders.map(async (folder) => {
+    // Process each folder sequentially to avoid race conditions with duplicate detection
+    const results: any[] = [];
+    for (const folder of new_folders) {
         try {
           logger?.info(`📦 [Automation] Starting folder: ${folder.folder_name}`);
           
@@ -406,7 +406,8 @@ const processAllFoldersStep = createStep({
           
           if (images.images.length === 0) {
             logger?.warn(`⚠️ [Automation] No images found in ${folder.folder_name}`);
-            return { success: false, status: 'failed', confidence: 0 };
+            results.push({ success: false, status: 'failed', confidence: 0 });
+            continue;
           }
           
           // Step 3: Analyze with Google Vision
@@ -494,7 +495,8 @@ const processAllFoldersStep = createStep({
             // HARD GUARD: If still can't reach 8 tags, force review
             if (allTags.length < 8) {
               logger?.error(`❌ [Automation] Cannot meet 8-tag minimum for ${folder.folder_name} (only ${allTags.length} tags)`);
-              return { success: true, status: 'review', confidence: 0 };
+              results.push({ success: true, status: 'review', confidence: 0 });
+              continue;
             }
           }
           
@@ -521,33 +523,23 @@ const processAllFoldersStep = createStep({
           // CRITICAL GUARD: Enforce 8-12 tag requirement before auto-publish
           if (allTags.length < 8 || allTags.length > 12) {
             logger?.error(`❌ [Automation] Tag count violation for ${folder.folder_name}: ${allTags.length} tags (must be 8-12)`);
-            return { success: true, status: 'review', confidence: validation.overall_confidence };
+            results.push({ success: true, status: 'review', confidence: validation.overall_confidence });
+            continue;
           }
           
           // DUPLICATE DETECTION: Check if this SKU already exists in Shopify
           try {
-            const { shopifyApi, ApiVersion } = await import("@shopify/shopify-api");
-            await import("@shopify/shopify-api/adapters/node");
-            const shopify = shopifyApi({
-              apiSecretKey: process.env.SHOPIFY_ACCESS_TOKEN!,
-              apiVersion: ApiVersion.October24,
-              isCustomStoreApp: true,
-              adminApiAccessToken: process.env.SHOPIFY_ACCESS_TOKEN!,
-              isEmbeddedApp: false,
-              hostName: process.env.SHOPIFY_STORE_URL!.replace(/^https?:\/\//, ''),
-            });
-            const session = shopify.session.customAppSession(process.env.SHOPIFY_STORE_URL!);
-            const client = new shopify.clients.Rest({ session });
-            
-            // Search for products with this SKU in the title (Shopify doesn't have direct SKU search in REST API)
-            const searchResponse: any = await client.get({
-              path: 'products',
-              query: { limit: 1, title: folder.folder_name },
+            const { findProductsByTitleTool } = await import('../tools/shopifyTool');
+            const duplicateCheck = await findProductsByTitleTool.execute({
+              context: { title_contains: folder.folder_name },
+              runtimeContext,
+              mastra,
             });
             
-            if (searchResponse.body?.products?.length > 0) {
-              logger?.warn(`⚠️ [Automation] Skipping duplicate: ${folder.folder_name} already exists (ID: ${searchResponse.body.products[0].id})`);
-              return { success: true, status: 'duplicate', confidence: validation.overall_confidence };
+            if (duplicateCheck.total_found > 0) {
+              logger?.warn(`⚠️ [Automation] Skipping duplicate: ${folder.folder_name} already exists (ID: ${duplicateCheck.products[0].id})`);
+              results.push({ success: true, status: 'duplicate', confidence: validation.overall_confidence });
+              continue;
             }
           } catch (error: any) {
             logger?.warn(`⚠️ [Automation] Duplicate check failed for ${folder.folder_name}: ${error.message}`);
@@ -591,18 +583,17 @@ const processAllFoldersStep = createStep({
             });
             
             logger?.info(`✅ [Automation] Published: ${folder.folder_name}`);
-            return { success: true, status: 'published', confidence: validation.overall_confidence };
+            results.push({ success: true, status: 'published', confidence: validation.overall_confidence });
           } else {
             logger?.info(`⏸️ [Automation] Needs review: ${folder.folder_name} (${validation.overall_confidence}%)`);
-            return { success: true, status: validation.status, confidence: validation.overall_confidence };
+            results.push({ success: true, status: validation.status, confidence: validation.overall_confidence });
           }
           
         } catch (error: any) {
           logger?.error(`❌ [Automation] Failed: ${folder.folder_name}`, { error: error.message });
-          return { success: false, status: 'failed', confidence: 0 };
+          results.push({ success: false, status: 'failed', confidence: 0 });
         }
-      })
-    );
+    }
     
     return {
       folders_found,
