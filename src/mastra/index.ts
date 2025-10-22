@@ -9,8 +9,7 @@ import { z } from "zod";
 
 import { sharedPostgresStorage } from "./storage";
 import { inngest, inngestServe } from "./inngest";
-import { exampleWorkflow } from "./workflows/exampleWorflow";
-import { exampleAgent } from "./agents/exampleAgent";
+import { setupConfigWorkflow } from "./workflows/setupConfigWorkflow";
 
 class ProductionPinoLogger extends MastraLogger {
   protected logger: pino.Logger;
@@ -56,7 +55,7 @@ class ProductionPinoLogger extends MastraLogger {
 export const mastra = new Mastra({
   storage: sharedPostgresStorage,
   // Register your workflows here
-  workflows: {},
+  workflows: { setupConfigWorkflow },
   // Register your agents here
   agents: {},
   mcpServers: {
