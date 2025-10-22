@@ -472,7 +472,26 @@ const processAllFoldersStep = createStep({
           
           // Ensure suggested_tags is an array (defensive handling)
           const suggestedTags = Array.isArray(seoResult?.suggested_tags) ? seoResult.suggested_tags : [];
-          const allTags = [...collectionMatch.tags_required, ...suggestedTags];
+          
+          // Deduplicate and enforce 8-12 tag limit
+          const uniqueTags = Array.from(new Set([...collectionMatch.tags_required, ...suggestedTags]));
+          const allTags = uniqueTags.slice(0, 12);
+          
+          if (allTags.length < 8) {
+            logger?.warn(`⚠️ [Automation] Only ${allTags.length} tags for ${folder.folder_name}, padding to minimum`);
+            // Add generic tags to reach minimum of 8
+            const genericTags = ['design', 'dtf', 'print', 'custom', 'apparel', 'graphic', 'trendy', 'unique', 'quality', 'style'];
+            for (const tag of genericTags) {
+              if (allTags.length >= 8) break;
+              if (!allTags.includes(tag)) allTags.push(tag);
+            }
+            
+            // HARD GUARD: If still can't reach 8 tags, force review
+            if (allTags.length < 8) {
+              logger?.error(`❌ [Automation] Cannot meet 8-tag minimum for ${folder.folder_name} (only ${allTags.length} tags)`);
+              return { success: true, status: 'review', confidence: 0 };
+            }
+          }
           
           // Defensive: ensure description exists
           const description = contentResponse?.description || `${folder.folder_name} DTF Design`;
@@ -488,13 +507,20 @@ const processAllFoldersStep = createStep({
               collection_match_confidence: collectionMatch.confidence,
               has_images: images.images.length > 0,
               variant_count: 0, // Will be set during Shopify product creation
+              recent_descriptions: [], // TODO: Query from database for duplicate detection
             },
             runtimeContext,
             mastra,
           });
           
-          // Step 9: Publish if quality is high enough
-          if (validation.overall_confidence >= 75) {
+          // CRITICAL GUARD: Enforce 8-12 tag requirement before auto-publish
+          if (allTags.length < 8 || allTags.length > 12) {
+            logger?.error(`❌ [Automation] Tag count violation for ${folder.folder_name}: ${allTags.length} tags (must be 8-12)`);
+            return { success: true, status: 'review', confidence: validation.overall_confidence };
+          }
+          
+          // Step 9: Publish if quality meets threshold (enforced by quality validation tool)
+          if (validation.status === 'auto_publish' && validation.overall_confidence >= 96) {
             const urlHandle = folder.folder_name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
             
             await createShopifyProductTool.execute({

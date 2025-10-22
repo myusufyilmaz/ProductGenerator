@@ -113,8 +113,8 @@ export function loadShopifyConfigSync(): ShopifyConfig {
       care_instructions: ["Machine wash cold", "Do not bleach"],
     },
     confidence_thresholds: {
-      auto_publish: 75,
-      quarantine: 60,
+      auto_publish: 96,
+      quarantine: 75,
       reject: 60,
     },
   };
