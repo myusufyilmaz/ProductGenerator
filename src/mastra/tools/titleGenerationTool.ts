@@ -69,11 +69,26 @@ Generate ONE best title and 3 alternative options.`;
         temperature: 0.7,
       });
       
+      // Clean up the AI response to extract just the title
       const lines = response.text.trim().split('\n').filter(line => line.trim());
-      const title = lines[0].replace(/^["']|["']$/g, '').replace(/^\d+\.\s*/, '').trim();
-      const alternatives = lines.slice(1, 4).map(line => 
-        line.replace(/^["']|["']$/g, '').replace(/^\d+\.\s*/, '').trim()
-      );
+      
+      // Remove markdown formatting, prefixes like "Best Title:", numbering, quotes
+      const cleanTitle = (rawTitle: string) => {
+        return rawTitle
+          .replace(/^\*\*Best Title:\*\*\s*/i, '')  // Remove "**Best Title:**"
+          .replace(/^###?\s*Best Title:\s*/i, '')   // Remove "### Best Title:" or "## Best Title:"
+          .replace(/^Best Title:\s*/i, '')          // Remove "Best Title:"
+          .replace(/^["'`]/g, '')                   // Remove leading quotes
+          .replace(/["'`]$/g, '')                   // Remove trailing quotes
+          .replace(/^\d+\.\s*/, '')                 // Remove numbering like "1. "
+          .replace(/^\*\*/g, '')                    // Remove leading **
+          .replace(/\*\*$/g, '')                    // Remove trailing **
+          .replace(/^Title:\s*/i, '')               // Remove "Title:"
+          .trim();
+      };
+      
+      const title = cleanTitle(lines[0]);
+      const alternatives = lines.slice(1, 4).map(line => cleanTitle(line));
       
       logger?.info('✅ [TitleGen] Title generated', { 
         title,
