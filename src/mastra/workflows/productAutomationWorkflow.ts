@@ -50,15 +50,32 @@ const scanDriveFoldersStep = createStep({
     
     const runtimeContext = new RuntimeContext();
     
-    // Scan DTF and POD parent folders for subfolders
+    // Scan DTF and POD parent folders for subfolders using environment variable folder IDs
+    const dtfFolderId = process.env.GOOGLE_DRIVE_DTF_FOLDER_ID;
+    const podFolderId = process.env.GOOGLE_DRIVE_POD_FOLDER_ID;
+    
+    if (!dtfFolderId || !podFolderId) {
+      logger?.error('❌ [Automation] Google Drive folder IDs not configured');
+      return {
+        folders_found: 0,
+        new_folders: [],
+      };
+    }
+    
     const dtfResult = await listDriveFoldersTool.execute({
-      context: { folder_name: 'DTF Designs' },
+      context: { 
+        folder_id: dtfFolderId,
+        folder_name: 'DTF Designs'
+      },
       runtimeContext,
       mastra,
     });
     
     const podResult = await listDriveFoldersTool.execute({
-      context: { folder_name: 'POD Apparel' },
+      context: { 
+        folder_id: podFolderId,
+        folder_name: 'POD Apparel'
+      },
       runtimeContext,
       mastra,
     });

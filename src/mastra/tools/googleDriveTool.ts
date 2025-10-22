@@ -6,7 +6,7 @@ import { google } from "googleapis";
  * Google Drive Tool for Shopify Automation
  * 
  * This tool handles:
- * - Listing folders in Google Drive
+ * - Listing folders in Google Drive by ID
  * - Downloading product mockup images
  * - Moving processed folders to "Done" folder
  */
@@ -54,14 +54,15 @@ async function getGoogleDriveClient() {
 }
 
 /**
- * List folders in a specific Google Drive folder
+ * List subfolders in a specific Google Drive folder by ID
  */
 export const listDriveFoldersTool = createTool({
   id: "list-drive-folders",
-  description: "Lists all folders in a specific Google Drive folder (DTF or POD parent folders)",
+  description: "Lists all subfolders in a specific Google Drive folder by folder ID",
   
   inputSchema: z.object({
-    folder_name: z.string().describe("Name of the folder to search for (e.g., 'DTF Designs', 'POD Apparel')"),
+    folder_id: z.string().describe("Google Drive folder ID to scan"),
+    folder_name: z.string().optional().describe("Folder name for logging (optional)"),
   }),
   
   outputSchema: z.object({
@@ -74,29 +75,17 @@ export const listDriveFoldersTool = createTool({
   
   execute: async ({ context, mastra }) => {
     const logger = mastra?.getLogger();
-    logger?.info('📁 [GoogleDrive] Listing folders', { folder_name: context.folder_name });
+    logger?.info('📁 [GoogleDrive] Listing subfolders', { 
+      folder_id: context.folder_id,
+      folder_name: context.folder_name 
+    });
     
     try {
       const drive = await getGoogleDriveClient();
       
-      // First, find the parent folder
-      const parentSearch = await drive.files.list({
-        q: `name='${context.folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-        fields: 'files(id, name)',
-        spaces: 'drive',
-      });
-
-      if (!parentSearch.data.files || parentSearch.data.files.length === 0) {
-        logger?.warn('⚠️ [GoogleDrive] Parent folder not found', { folder_name: context.folder_name });
-        return { folders: [] };
-      }
-
-      const parentFolderId = parentSearch.data.files[0].id!;
-      logger?.info('📂 [GoogleDrive] Found parent folder', { id: parentFolderId, name: context.folder_name });
-      
-      // List all subfolders in the parent folder
+      // List all subfolders in the specified folder
       const response = await drive.files.list({
-        q: `'${parentFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+        q: `'${context.folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
         fields: 'files(id, name)',
         orderBy: 'createdTime',
         spaces: 'drive',
@@ -105,10 +94,10 @@ export const listDriveFoldersTool = createTool({
       const folders = response.data.files?.map(file => ({
         id: file.id!,
         name: file.name!,
-        path: `${context.folder_name}/${file.name}`,
+        path: `${context.folder_name || 'folder'}/${file.name}`,
       })) || [];
 
-      logger?.info('✅ [GoogleDrive] Found folders', { count: folders.length });
+      logger?.info('✅ [GoogleDrive] Found subfolders', { count: folders.length });
       return { folders };
       
     } catch (error) {
@@ -191,7 +180,7 @@ export const moveFolderToDoneTool = createTool({
   inputSchema: z.object({
     folder_id: z.string().describe("Google Drive folder ID to move"),
     folder_name: z.string().describe("Folder name for logging"),
-    parent_folder_name: z.string().describe("Parent folder name (DTF Designs, POD Apparel, etc.)"),
+    parent_folder_id: z.string().describe("Parent folder ID (DTF or POD folder)"),
   }),
   
   outputSchema: z.object({
@@ -206,22 +195,9 @@ export const moveFolderToDoneTool = createTool({
     try {
       const drive = await getGoogleDriveClient();
       
-      // Find or create "Done" folder in the parent folder
-      const parentSearch = await drive.files.list({
-        q: `name='${context.parent_folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-        fields: 'files(id)',
-        spaces: 'drive',
-      });
-
-      if (!parentSearch.data.files || parentSearch.data.files.length === 0) {
-        throw new Error(`Parent folder '${context.parent_folder_name}' not found`);
-      }
-
-      const parentFolderId = parentSearch.data.files[0].id!;
-      
-      // Check if "Done" folder exists
+      // Check if "Done" folder exists in parent
       const doneSearch = await drive.files.list({
-        q: `name='Done' and '${parentFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+        q: `name='Done' and '${context.parent_folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
         fields: 'files(id)',
         spaces: 'drive',
       });
@@ -237,37 +213,31 @@ export const moveFolderToDoneTool = createTool({
           requestBody: {
             name: 'Done',
             mimeType: 'application/vnd.google-apps.folder',
-            parents: [parentFolderId],
+            parents: [context.parent_folder_id],
           },
           fields: 'id',
         });
         
         doneFolderId = newFolder.data.id!;
-        logger?.info('✨ [GoogleDrive] Created Done folder', { id: doneFolderId });
+        logger?.info('📂 [GoogleDrive] Created Done folder', { id: doneFolderId });
       }
-      
-      // Get current parent of the folder to move
-      const fileData = await drive.files.get({
-        fileId: context.folder_id,
-        fields: 'parents',
-      });
-      
-      const previousParents = fileData.data.parents?.join(',') || '';
-      
+
       // Move the folder
       await drive.files.update({
         fileId: context.folder_id,
         addParents: doneFolderId,
-        removeParents: previousParents,
+        removeParents: context.parent_folder_id,
         fields: 'id, parents',
       });
 
-      const new_location = `${context.parent_folder_name}/Done/${context.folder_name}`;
-      logger?.info('✅ [GoogleDrive] Folder moved successfully', { new_location });
-      
+      logger?.info('✅ [GoogleDrive] Folder moved to Done', { 
+        folder_name: context.folder_name,
+        done_folder_id: doneFolderId,
+      });
+
       return {
         success: true,
-        new_location,
+        new_location: `Done/${context.folder_name}`,
       };
       
     } catch (error) {
