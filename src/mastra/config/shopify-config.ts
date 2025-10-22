@@ -73,7 +73,7 @@ export function loadShopifyConfigSync(): ShopifyConfig {
     product_types: {
       "DTF": {
         type_name: "DTF Design",
-        product_category: "gid://shopify/TaxonomyCategory/aa-3-1",
+        product_category: "gid://shopify/TaxonomyCategory/ae-2-1-2-14-4-4",
         vendor: "InkMerge",
         variants: [
           { size: "Adult Left Chest  (4\")", sku_suffix: "LC04IN", price: 1.99 },

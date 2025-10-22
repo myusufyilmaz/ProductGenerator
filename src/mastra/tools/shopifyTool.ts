@@ -34,6 +34,58 @@ async function getShopifyClient() {
   return shopify;
 }
 
+// Set product category using GraphQL (REST API doesn't support taxonomy)
+async function setProductCategory(productId: string, categoryId: string, logger?: any) {
+  logger?.info('🏷️ [Shopify] Setting product category via GraphQL', { product_id: productId, category_id: categoryId });
+  
+  const shopify = await getShopifyClient();
+  const session = shopify.session.customAppSession(process.env.SHOPIFY_STORE_URL!);
+  const client = new shopify.clients.Graphql({ session });
+  
+  const mutation = `
+    mutation productUpdate($input: ProductInput!) {
+      productUpdate(input: $input) {
+        product {
+          id
+          productCategory {
+            productTaxonomyNode {
+              id
+              name
+              fullName
+            }
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+  
+  const variables = {
+    input: {
+      id: `gid://shopify/Product/${productId}`,
+      category: categoryId
+    }
+  };
+  
+  try {
+    const response = await client.request(mutation, { variables });
+    const data = response.data as any;
+    
+    if (data.productUpdate.userErrors && data.productUpdate.userErrors.length > 0) {
+      logger?.error('❌ [Shopify] GraphQL errors setting category', { errors: data.productUpdate.userErrors });
+    } else {
+      logger?.info('✅ [Shopify] Category set successfully', { 
+        category: data.productUpdate.product.productCategory?.productTaxonomyNode?.fullName 
+      });
+    }
+  } catch (error: any) {
+    logger?.error('❌ [Shopify] Failed to set category', { error: error.message });
+  }
+}
+
 export const createShopifyProductTool = createTool({
   id: "create-shopify-product",
   description: "Creates a complete product listing in Shopify with all fields, variants, and images",
@@ -142,7 +194,12 @@ export const createShopifyProductTool = createTool({
         variant_count: product.variants.length,
       });
       
-      // Step 3: Add to collection if specified
+      // Step 3: Set product category using GraphQL (if provided)
+      if (context.product_category) {
+        await setProductCategory(product.id.toString(), context.product_category, logger);
+      }
+      
+      // Step 4: Add to collection if specified
       if (context.collection_id) {
         try {
           logger?.info('📂 [Shopify] Adding product to collection', { collection_id: context.collection_id });
