@@ -3,8 +3,8 @@ import { z } from "zod";
 /**
  * Shopify Product Listing Configuration
  * 
- * This file defines the master configuration for automated Shopify listings.
- * All AI decisions are constrained to these predefined options - no hallucination possible.
+ * Configuration is now built dynamically from your Shopify store data
+ * Run the setupConfigWorkflow to generate this from your real store
  */
 
 // Collection definition with keywords for matching
@@ -59,82 +59,38 @@ export const ShopifyConfigSchema = z.object({
 
 export type ShopifyConfig = z.infer<typeof ShopifyConfigSchema>;
 
-/**
- * Default configuration - user should customize this
- */
-export const defaultShopifyConfig: ShopifyConfig = {
-  sales_channels: [
-    "Online Store",
-    "Google & YouTube",
-    "Inbox",
-  ],
-  product_types: {
-    DTF: {
-      type_name: "DTF Design",
-      vendor: "InkMerge",
-      variants: [
-        { size: "Adult Left Chest (4\")", sku_suffix: "ALC", price: 3.99, inventory_quantity: 5000 },
-        { size: "Adult Full Front (11\")", sku_suffix: "AFF", price: 4.99, inventory_quantity: 5000 },
-        { size: "Youth (8\")", sku_suffix: "Y08", price: 3.99, inventory_quantity: 5000 },
-        { size: "Toddler (6\")", sku_suffix: "T06", price: 2.99, inventory_quantity: 5000 },
-        { size: "Hat (3\")", sku_suffix: "H03", price: 1.99, inventory_quantity: 5000 },
-      ],
-    },
-    POD: {
-      type_name: "Print on Demand",
-      vendor: "InkMerge",
-      variants: [
-        { size: "Small", sku_suffix: "S", price: 19.99, inventory_quantity: 100 },
-        { size: "Medium", sku_suffix: "M", price: 19.99, inventory_quantity: 100 },
-        { size: "Large", sku_suffix: "L", price: 19.99, inventory_quantity: 100 },
-        { size: "X-Large", sku_suffix: "XL", price: 21.99, inventory_quantity: 100 },
-        { size: "2X-Large", sku_suffix: "2XL", price: 23.99, inventory_quantity: 100 },
-      ],
-    },
-  },
-  collections: [
-    {
-      id: "emt-dtf-designs",
-      name: "EMT - DTF Designs",
-      tags_required: ["channel:dtf", "theme:emt"],
-      keywords: ["emt", "emergency", "medical", "paramedic", "ambulance", "first responder", "healthcare"],
-      boost_score: 1.0,
-    },
-    {
-      id: "emt-pod-apparel",
-      name: "EMT - POD Apparel",
-      tags_required: ["channel:pod", "theme:emt"],
-      keywords: ["emt", "emergency", "medical", "paramedic", "shirt", "hoodie", "apparel", "clothing"],
-      boost_score: 1.0,
-    },
-    {
-      id: "sports-dtf-designs",
-      name: "Sports - DTF Designs",
-      tags_required: ["channel:dtf", "theme:sports"],
-      keywords: ["sports", "baseball", "football", "basketball", "soccer", "athletic", "team"],
-      boost_score: 1.0,
-    },
-  ],
-  theme_tags: ["theme:emt", "theme:sports", "theme:baseball", "theme:football", "theme:patriotic"],
-  style_tags: ["style:playful", "style:professional", "style:vintage", "style:modern"],
-  audience_tags: ["audience:team-parents", "audience:adults", "audience:youth"],
-  metafield_options: {
-    compatible_printer: ["DTF-X", "L1800", "Universal"],
-    paper_size: ["8.5x11", "11x17"],
-    care_instructions: ["Wash inside out", "Low heat tumble dry", "Do not iron directly on design"],
-  },
-  confidence_thresholds: {
-    auto_publish: 75,
-    quarantine: 60,
-    reject: 60,
-  },
-};
 
 /**
- * Load configuration from environment or use default
+ * Synchronous version for tools that need immediate access
+ * Loads from generated JSON file if available
  */
-export function loadShopifyConfig(): ShopifyConfig {
-  // In production, you could load this from a database or config file
-  // For now, we use the default configuration
-  return defaultShopifyConfig;
+export function loadShopifyConfigSync(): ShopifyConfig {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const configPath = path.join(process.cwd(), 'src/mastra/config/generated-shopify-config.json');
+    
+    if (fs.existsSync(configPath)) {
+      const configData = fs.readFileSync(configPath, 'utf-8');
+      return JSON.parse(configData);
+    }
+  } catch (error) {
+    console.warn('[Config] Could not load from file, using minimal fallback');
+  }
+  
+  // Fallback
+  return {
+    sales_channels: ["Online Store"],
+    product_types: {},
+    collections: [],
+    theme_tags: [],
+    style_tags: [],
+    audience_tags: [],
+    metafield_options: {},
+    confidence_thresholds: {
+      auto_publish: 75,
+      quarantine: 60,
+      reject: 60,
+    },
+  };
 }

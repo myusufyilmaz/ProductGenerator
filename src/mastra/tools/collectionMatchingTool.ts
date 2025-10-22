@@ -1,6 +1,6 @@
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
-import { loadShopifyConfig, type Collection } from "../config/shopify-config";
+import { loadShopifyConfigSync, type Collection } from "../config/shopify-config";
 
 /**
  * Collection Matching Tool
@@ -42,7 +42,7 @@ export const matchProductToCollectionTool = createTool({
     });
     
     try {
-      const config = loadShopifyConfig();
+      const config = loadShopifyConfigSync();
       
       // Extract hints from folder path
       const folderHints = context.folder_path.toLowerCase().split('/').flatMap(part => 

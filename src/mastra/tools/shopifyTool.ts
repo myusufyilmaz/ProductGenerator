@@ -1,6 +1,6 @@
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
-import { shopifyApi, LATEST_API_VERSION } from "@shopify/shopify-api";
+import { shopifyApi, ApiVersion } from "@shopify/shopify-api";
 import "@shopify/shopify-api/adapters/node";
 
 /**
@@ -22,7 +22,7 @@ function getShopifyClient() {
 
   const shopify = shopifyApi({
     apiSecretKey: process.env.SHOPIFY_ACCESS_TOKEN!,
-    apiVersion: LATEST_API_VERSION,
+    apiVersion: ApiVersion.October24,
     isCustomStoreApp: true,
     adminApiAccessToken: process.env.SHOPIFY_ACCESS_TOKEN!,
     isEmbeddedApp: false,
@@ -127,7 +127,6 @@ export const createShopifyProductTool = createTool({
       const response = await client.post({
         path: 'products',
         data: { product: productData },
-        type: 'application/json',
       });
       
       const product = (response.body as any).product;
@@ -151,7 +150,6 @@ export const createShopifyProductTool = createTool({
                 collection_id: context.collection_id,
               },
             },
-            type: 'application/json',
           });
           
           logger?.info('✅ [Shopify] Product added to collection');
